@@ -66,9 +66,60 @@ th{color:var(--mut);font-weight:500}
 canvas{width:100%;max-width:100%;display:block;border-radius:8px;background:#101714}
 .note{font-size:13px;color:var(--mut);max-width:80ch}
 footer{font-size:13px;color:var(--mut);border-top:1px solid var(--line);padding-top:16px}
+/* 한 페이지 탭 */
+.tabs{position:sticky;top:0;z-index:10;background:rgba(14,19,17,.94);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);
+  padding-top:env(safe-area-inset-top,0px);padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px))}
+.tabs nav{max-width:1280px;margin:0 auto;display:flex;gap:4px;overflow-x:auto}
+.tabs a{flex:none;padding:12px 14px;font-size:15px;color:var(--mut);text-decoration:none;border-bottom:2px solid transparent}
+.tabs a.on{color:var(--fg);border-bottom-color:var(--exit)}
+.tabs a:focus-visible{outline:2px solid var(--exit)}
+.view{display:none}.view.on{display:block}
+.frame{max-width:1280px;margin:0 auto;padding:16px max(12px,env(safe-area-inset-left,0px)) 24px max(12px,env(safe-area-inset-right,0px))}
+.frame iframe{width:100%;border:1px solid var(--line);border-radius:10px;background:#070a09;display:block}
+.frame .slidebox{aspect-ratio:16/9;max-width:100%}
+.frame .slidebox iframe{height:100%}
+.frame .tools{display:flex;gap:8px;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:14px;color:var(--mut);flex-wrap:wrap}
+.frame button,.script button{background:#1b2420;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font:inherit;font-size:14px;cursor:pointer}
+.frame button:focus-visible,.script button:focus-visible{outline:2px solid var(--exit)}
+/* 핸드폰 대본 */
+.script{max-width:640px;margin:0 auto;padding:16px max(16px,env(safe-area-inset-left,0px)) 120px max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:14px}
+.timer{display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:48px;background:var(--bg);padding:8px 0;z-index:5}
+.timer .t{font-family:var(--mono);font-size:34px;font-variant-numeric:tabular-nums}
+.timer .t.over{color:var(--warn)}
+.cue{border:1px solid var(--line);border-radius:12px;padding:16px 18px;background:var(--panel);cursor:pointer}
+.cue.now{border-color:var(--exit);box-shadow:0 0 0 1px var(--exit) inset}
+.cue.past{opacity:.45}
+.cue .h{display:flex;justify-content:space-between;font-family:var(--mono);font-size:13px;color:var(--mut);margin-bottom:6px}
+.cue .h b{color:var(--exit);font-weight:500}
+.cue p{font-size:21px;line-height:1.6;color:var(--fg);max-width:none}
+.cue .do{font-size:14px;color:var(--warn);margin-top:6px}
 </style>
 </head>
 <body>
+<header class="tabs"><nav aria-label="보기">
+  <a href="#report" data-v="report">결과·제안</a>
+  <a href="#slides" data-v="slides">발표</a>
+  <a href="#sim" data-v="sim">시뮬레이터</a>
+  <a href="#script" data-v="script">대본(폰)</a>
+</nav></header>
+
+<div class="view" id="v-slides"><div class="frame">
+  <div class="tools"><span>← → 키 또는 클릭으로 넘김</span><button id="fs">전체 화면</button></div>
+  <div class="slidebox"><iframe id="slidesFrame" src="slides.html" title="발표 슬라이드"></iframe></div>
+</div></div>
+
+<div class="view" id="v-sim"><div class="frame">
+  <iframe src="sim.html" title="피난 시뮬레이터" style="height:calc(100vh - 90px);min-height:640px" loading="lazy"></iframe>
+</div></div>
+
+<div class="view" id="v-script"><div class="script">
+  <div class="timer"><span class="t" id="tm">0:00</span><span id="cueN" style="color:var(--mut);font-size:14px">1 / 8</span>
+    <span style="display:flex;gap:6px"><button id="tStart">시작</button><button id="tReset">리셋</button></span></div>
+  <p style="font-size:14px;color:var(--mut)">1분 라이트닝 데모용. 카드를 누르면 다음으로 넘어가요. 오른쪽 숫자는 그 슬라이드를 시작할 시각이에요.</p>
+  <div id="cues"></div>
+</div></div>
+
+<div class="view" id="v-report">
 <div class="wrap">
 
 <header>
@@ -80,7 +131,7 @@ footer{font-size:13px;color:var(--mut);border-top:1px solid var(--line);padding-
     <span class="chip">② 무엇에 반응하게 · <b>사람의 흐름</b></span>
     <span class="chip">③ 어떤 지능으로 · <b>에이전트 시뮬레이션</b></span>
   </div>
-  <div class="cta"><a class="primary" href="sim.html">시뮬레이터 실행</a><a href="slides.html">발표 슬라이드</a></div>
+  <div class="cta"><a class="primary" href="#sim">시뮬레이터 실행</a><a href="#slides">발표 슬라이드</a><a href="#script">핸드폰 대본</a></div>
 </header>
 
 <section>
@@ -199,6 +250,53 @@ footer{font-size:13px;color:var(--mut);border-top:1px solid var(--line);padding-
   AI 활용: Claude와 함께 제작. 장소·카드 해석·직원 시나리오 채택·설계 제안 선택은 작성자가 정함.
 </footer>
 </div>
+</div>
+<script>
+// 탭: #report · #slides · #sim · #script (폰 폭이면 대본부터)
+const VIEWS = ['report', 'slides', 'sim', 'script'];
+function route() {
+  let v = location.hash.slice(1);
+  if (!VIEWS.includes(v)) v = innerWidth < 640 ? 'script' : 'report';
+  VIEWS.forEach(k => document.getElementById('v-' + k).classList.toggle('on', k === v));
+  document.querySelectorAll('.tabs a').forEach(a => a.classList.toggle('on', a.dataset.v === v));
+  if (v === 'slides') document.getElementById('slidesFrame').focus();
+  scrollTo(0, 0);
+}
+addEventListener('hashchange', route);
+document.getElementById('fs').onclick = () => { const f = document.getElementById('slidesFrame'); (f.requestFullscreen ? f.requestFullscreen() : Promise.reject()).catch(() => {}); f.focus(); };
+
+// 1분 대본: [시작 초, 슬라이드 제목, 말할 내용, 동작]
+const CUES = [
+  [0, '표지', '제 카드는 기둥 그리드, 사람의 흐름, 에이전트 시뮬레이션입니다. 결론부터 말하면, 2035년 지하 피난의 병목은 기둥이 아니라 도움이 필요한 사람이었습니다.'],
+  [9, '문제', '2035년 영동대로 지하에는 노선 다섯 개가 모이고, 노년부양비는 47.7까지 올라갑니다.'],
+  [15, '방법', 'Helbing 사회력 모델과 요양원 직원 조력 논문 값을 웹에 구현해서, 기둥 다섯 유형과 직원 행동 네 가지를 비교했습니다.'],
+  [23, '결과 1', '그런데 기둥을 바꿔도 피난 시간은 거의 그대로였습니다. 좁은 출구에서만 최대 9퍼센트.'],
+  [30, '결과 2', '대신 2035년에는 휠체어·보행보조기 사용자의 피난 시간이 2.4배로 늘었습니다.'],
+  [36, '결과 3', '직원이 구역을 나눠 맡으면 이 시간이 41에서 56퍼센트 줄었습니다.', '시뮬레이터로 S1 → S3 장면을 보여 줄 수 있으면 여기서'],
+  [43, '설계 제안', '그래서 조력 구역 그리드를 제안합니다. 기둥 3×2칸을 직원 한 명의 담당 구역으로 묶고, 출구 옆에 조력 대기 포켓을 둡니다.'],
+  [53, '정리', '기둥은 흐름을 막는 물체가 아니라, 누가 누구를 도울지 정하는 틀이 됩니다. 감사합니다.'],
+];
+const fmtT = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+let cur = 0, t0 = null, tick = null;
+document.getElementById('cues').innerHTML = CUES.map(([s, h, p, d], i) =>
+  `<div class="cue" data-i="${i}"><div class="h"><b>${i + 1}. ${h}</b><span>${fmtT(s)}</span></div><p>${p}</p>${d ? `<div class="do">▶ ${d}</div>` : ''}</div>`).join('');
+const cueEls = [...document.querySelectorAll('.cue')];
+function setCue(i) {
+  cur = Math.max(0, Math.min(CUES.length - 1, i));
+  cueEls.forEach((el, j) => { el.classList.toggle('now', j === cur); el.classList.toggle('past', j < cur); });
+  document.getElementById('cueN').textContent = `${cur + 1} / ${CUES.length}`;
+  cueEls[cur].scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+}
+cueEls.forEach(el => el.onclick = () => { if (!t0) start(); setCue(+el.dataset.i + (+el.dataset.i === cur ? 1 : 0)); });
+function start() {
+  if (tick) return;
+  t0 = Date.now();
+  tick = setInterval(() => { const s = (Date.now() - t0) / 1000, el = document.getElementById('tm'); el.textContent = fmtT(s); el.classList.toggle('over', s > 60); }, 250);
+}
+document.getElementById('tStart').onclick = start;
+document.getElementById('tReset').onclick = () => { clearInterval(tick); tick = null; t0 = null; document.getElementById('tm').textContent = '0:00'; document.getElementById('tm').classList.remove('over'); setCue(0); };
+setCue(0); route();
+</script>
 <script>
 const bars = (id, rows, max, goodFn) => {
   document.getElementById(id).innerHTML = rows.map(([k, v, cls]) =>

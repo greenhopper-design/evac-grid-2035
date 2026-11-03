@@ -50,7 +50,7 @@ tr.cur td{background:#23303a}
     <div class="sub" id="siteNote"></div>
   </div>
   <div class="card stmt">나는 <span class="b">「기둥 그리드」</span>를 <span class="o">「사람의 흐름」</span>에 반응하게 <span class="g">「에이전트 시뮬레이션」</span>으로 설계한다.
-  내 시제품은 <b>2035년 노인 이용객이 늘어난 영동대로 지하공간에서, 기둥 배치 유형에 따라 피난 흐름과 병목이 어떻게 달라지는지</b>를 보여 준다.</div>
+  내 시제품은 <b>2035년 노인 이용객이 늘어난 서울 지하·공공공간에서, 기둥 배치에 따라 피난 흐름의 혼잡이 어떻게 달라지는지</b>를 보여 준다.</div>
 
   <div class="card">
     <div class="btns" id="sites" style="margin-bottom:8px"></div>
@@ -62,14 +62,13 @@ tr.cur td{background:#23303a}
       <span>기둥 <b id="hType">-</b></span>
       <span>경과 <b id="hT">0.0</b>s</span>
       <span>탈출 <b id="hOut">0</b></span>
-      <span>남은 성인 <b id="hA" style="color:var(--blue)">0</b> · 노인 <b id="hE" style="color:var(--ora)">0</b> · 조력 대기 <b id="hW" style="color:var(--pink)">0</b> · 조력 중 <b id="hS" style="color:var(--grn)">0</b></span>
+      <span>남은 성인 <b id="hA" style="color:var(--blue)">0</b> · 노인 <b id="hE" style="color:var(--ora)">0</b><b id="hW" hidden></b><b id="hS" hidden></b></span>
       <span>최대 밀도 <b id="hD">0</b>명/㎡ <b id="hL"></b></span>
       <span id="hRound"></span>
     </div>
     <div class="legend" id="los"></div>
     <div class="legend">
-      <span><i style="background:var(--blue)"></i>성인</span><span><i style="background:var(--ora)"></i>노인(자가보행)</span><span><i style="background:#c084fc"></i>보행보조기</span><span><i style="background:var(--pink)"></i>휠체어</span><span><i style="background:#4cd07d"></i>직원(조력자)</span>
-      <span>흰 테두리 = 조력 대기 · 초록 테두리 = 직원과 함께 이동 · 화재 시 엘리베이터 사용 안 함</span>
+      <span><i style="background:var(--blue)"></i>성인</span><span><i style="background:var(--ora)"></i>노인(자가보행)</span><span>화재 시 엘리베이터 사용 안 함</span>
       <span>□ 기둥 · 초록선 = 흐름 반응 이동 · 노랑 = 출구 · 회색 = 아래층에서 올라오는 계단 · 진회색 = 실·벽</span>
       <span><b>출구 클릭 = 화재로 폐쇄/개방</b> · 그 외 클릭 = 확대/복귀</span>
     </div>
@@ -79,14 +78,15 @@ tr.cur td{background:#23303a}
     <div class="card">
       <h2>1. 시나리오 · 이용자 구성 (%)</h2>
       <div class="btns"><button id="s2026">현재 2026</button><button id="s2035" class="on">미래 2035</button></div>
-      <div class="mix" style="grid-template-columns:50px repeat(4,1fr)"><span></span><span>노인</span><span>보조기</span><span>휠체어</span><span>인원</span>
-        <span>2026</span><input id="e2026" type="number" value="12" min="0" max="80"><input id="b2026" type="number" value="1" min="0" max="20"><input id="w2026" type="number" value="1" min="0" max="20"><input id="n2026" type="number" min="20" max="3000" step="10">
-        <span>2035</span><input id="e2035" type="number" value="22" min="0" max="80"><input id="b2035" type="number" value="3" min="0" max="20"><input id="w2035" type="number" value="2" min="0" max="20"><input id="n2035" type="number" min="20" max="3000" step="10">
+      <div class="mix" style="grid-template-columns:50px repeat(2,1fr)"><span></span><span>노인 %</span><span>인원</span>
+        <span>2026</span><input id="e2026" type="number" value="12" min="0" max="80"><input id="n2026" type="number" min="20" max="3000" step="10">
+        <span>2035</span><input id="e2035" type="number" value="22" min="0" max="80"><input id="n2035" type="number" min="20" max="3000" step="10">
       </div>
-      <label style="margin-top:8px">직원(조력자) 수<input id="nst" type="range" min="0" max="30" step="1"><span id="nstv"></span></label>
-      <div class="btns" id="staffSc"></div>
+      <span hidden><input id="b2026" value="0"><input id="w2026" value="0"><input id="b2035" value="0"><input id="w2035" value="0"></span>
+      <label style="margin-top:8px" hidden>직원(조력자) 수<input id="nst" type="range" min="0" max="30" step="1"><span id="nstv"></span></label>
+      <div class="btns" id="staffSc" hidden></div>
       <label>긴급도(서두름)<input id="pn" type="range" min="1" max="2" step="0.1" value="1.5"><span id="pnv"></span></label>
-      <div class="note">사람 유형·속도는 Lim·Lee·Hwang(2023, Buildings 13(2):400) 표 1·2 값: 자가보행 노인 0.9 m/s·어깨 37.9cm, 보행보조기 0.5 m/s(조력 시 0.57)·55cm, 휠체어 0.83 m/s(직원이 밀 때 1.5)·70cm, 직원 1.3 m/s. 보행보조기·휠체어는 그 자리에서 직원을 기다리고, 직원이 데리고 가장 가까운 출구로 나간 뒤 다시 들어와 다음 사람을 찾는다(논문 그림 3). 성인 1.2 m/s, 비율·인원은 가정값.</div>
+      <div class="note">속도: 성인 1.2 m/s, 노인 0.9 m/s·어깨 37.9cm(Lim·Lee·Hwang 2023 표 2). 비율·인원은 가정값. 고밀도 노출 = 1㎡에 2명 이상(Fruin LOS F)으로 붐빈 곳에 있었던 사람·초.</div>
     </div>
     <div class="card">
       <h2>2. 기둥 그리드 유형</h2>
@@ -105,16 +105,11 @@ tr.cur td{background:#23303a}
     <div class="card">
       <h2>3. 결과 (초, A 대비) · <span id="tSite"></span></h2>
       <table>
-        <thead><tr><th>기둥 유형</th><th>2026 보행자 전원</th><th>2035 보행자 전원</th><th>2035 조력 평균</th><th>2035 조력 마지막</th></tr></thead>
+        <thead><tr><th>기둥 유형</th><th>2026 전원</th><th>2035 전원</th><th>2035 평균</th><th>2035 노인 평균</th><th>2035 고밀도 노출</th></tr></thead>
         <tbody id="tb"></tbody>
       </table>
-      <h2 style="margin-top:12px">직원 행동 시나리오 (2035, 현재 기둥 유형) · 논문 표 3</h2>
-      <table>
-        <thead><tr><th>시나리오</th><th>대상 지정</th><th>우선순위</th><th>조력 평균</th><th>조력 마지막</th></tr></thead>
-        <tbody id="tb2"></tbody>
-      </table>
-      <div class="btns" style="margin-top:6px"><button id="allS">직원 시나리오 비교 S1→S4</button></div>
-      <div class="note" style="margin-top:6px">보행자 = 성인+자가보행 노인. 조력 = 보행보조기+휠체어(직원과 함께 대피). 결과는 장소·폐쇄 출구·직원 수 조건마다 따로 기록. 수치는 유형 비교용이며 RSET 산정값이 아님.</div>
+      <div hidden><table><tbody id="tb2"></tbody></table><button id="allS"></button></div>
+      <div class="note" style="margin-top:6px">전원 = 마지막 사람이 나간 시각, 평균 = 전체 평균 피난 시간(초), 고밀도 노출 = 명·초. 결과는 장소·폐쇄 출구 조건마다 따로 기록. 수치는 유형 비교용이며 RSET 산정값이 아님.</div>
     </div>
   </div>
 </div>
@@ -187,6 +182,8 @@ const STAFF_SC = {
 let staffSc = 1, helpers = [], reinsert = [], queueS = [];
 const staffRes = {};
 const TYPES = { A: '정방형 그리드', B: '엇갈림 그리드', C: '넓은 스팬(1.5배)', D: '출구 앞 기둥', E: '흐름 반응 그리드' };
+// Z: 1회차(A)에서 흐름 밀도를 재고, 출구 가까이 흐름이 비켜 간 기둥 옆 칸을 조력 대기 포켓으로 정한 뒤 2회차를 돌린다
+let pockets = [], pocketF = null;
 let CS = .5;
 const DT = .02;
 const maskOK = (x, y) => { if (!S.mask) return true; const c = S.maskCS || 1, mw = S.maskW || W; return x >= 0 && y >= 0 && x < W && y < H && S.mask[Math.floor(y / c) * mw + Math.floor(x / c)] === 1; };
@@ -215,7 +212,7 @@ function loadSite(id) {
     e.cy = e.side === 'N' ? 0 : e.side === 'S' ? H : e.p;
   }
   S.elevs.forEach(e => { e.n = 'EV'; e.rate = 1 / 20; });
-  $('sp').value = S.sp; $('cs').value = S.cs; $('n2026').value = S.n[0]; $('n2035').value = S.n[1]; $('nst').value = S.st;
+  $('sp').value = S.sp; $('cs').value = S.cs; $('n2026').value = S.n[0]; $('n2035').value = S.n[1]; $('nst').value = 0;
   $('siteNote').textContent = S.note; $('tSite').textContent = S.name;
   for (const b of $('sites').children) b.classList.toggle('on', b.dataset.k === id);
   agents = []; pending = []; t = 0; running = false; zoom = null; queue = [];
@@ -304,7 +301,7 @@ function dijkstra(targets) {
   }
   return d;
 }
-let portalLink = new Int32Array(1).fill(-1), portalCells = [], stairList = [], floorLast = [], stairStat = [], floorInit = [];
+let expo = 0, portalLink = new Int32Array(1).fill(-1), portalCells = [], stairList = [], floorLast = [], stairStat = [], floorInit = [];
 
 // 같은 장소·시나리오는 같은 시드 → 유형끼리 같은 사람들로 비교
 function population() {
@@ -343,12 +340,19 @@ function startRun(keepCols) {
   }
   done = { adult: [], elder: [], aid: [], wheel: [], staff: [] };
   for (const e of S.elevs) e.next = 0;
-  noise = rng(7); reinsert = []; stairList = [];
+  noise = rng(7); reinsert = []; stairList = []; expo = 0;
   floorLast = (S.floors || [0]).map(() => 0);
   stairStat = (S.portals || []).map(p => { p.next = { up: 0, dn: 0 }; return { n: p.n, pass: 0, maxQ: 0 }; });
   floorInit = (S.floors || [0]).map((f, i) => pending.filter(a => a.kind !== 'staff' && floorOf(a.x) === i).length);
   // 구역 지정: 조력 필요자와 직원을 x 순서로 나눠 직원마다 담당 구역을 준다
+  if (!(type === 'Z' && round > 0)) pockets = [];
+  pocketF = pockets.length ? dijkstra(pockets.map(q => ({ side: 'P', cx: q.x, cy: q.y, w: 2.4 }))) : null;
   helpers = pending.filter(a => KIND[a.kind].help).sort((p, q) => p.x - q.x);
+  // 포켓이 25m 안에 있고 출구 쪽이면, 조력 대상은 직원을 기다리는 동안 스스로 포켓까지 간다
+  helpers.forEach(h => {
+    const q = pockets.length ? pockets.reduce((b, p) => Math.hypot(p.x - h.x, p.y - h.y) < Math.hypot(b.x - h.x, b.y - h.y) ? p : b) : null;
+    h.toPocket = !!q && pocketF[cellOf(h.x, h.y)] < 25 / CS && stairF[cellOf(q.x, q.y)] < stairF[cellOf(h.x, h.y)]; h.atPocket = false;
+  });
   const staff = pending.filter(a => a.kind === 'staff').sort((p, q) => p.x - q.x);
   helpers.forEach((h, i) => { h.claimed = false; h.zoneStaff = staff.length ? staff[Math.floor(i * staff.length / helpers.length)] : null; });
   staff.forEach(s => { s.task = null; });
@@ -372,8 +376,11 @@ function step() {
     // 기다리던 사람이 군중에 밀려 자리를 옮기면 길을 다시 찾는다
     else if (a.kind === 'staff' && Math.hypot(a.task.x - a.tx, a.task.y - a.ty) > 1.5) { a.tf = dijkstra([{ side: 'P', cx: a.task.x, cy: a.task.y, w: 2.6 }]); a.tx = a.task.x; a.ty = a.task.y; }
     // 직원은 담당 노인을 찾아가고, 조력 필요자는 직원이 올 때까지 제자리에서 기다린다 (논문 그림 3)
-    const seeking = a.kind === 'staff' && a.task, waiting = KIND[a.kind].help && !a.escort && staffOn;
-    const f = seeking ? a.tf : stairF;
+    const goPocket = KIND[a.kind].help && !a.escort && a.toPocket && !a.atPocket && staffOn;
+    const seeking = a.kind === 'staff' && a.task, waiting = KIND[a.kind].help && !a.escort && staffOn && !goPocket;
+    const f = seeking ? a.tf : goPocket ? pocketF : stairF;
+    // 포켓 근처(2.5m)에 닿거나 60초가 지나면 그 자리에서 기다린다
+    if (goPocket && (f[cellOf(a.x, a.y)] < 2.5 / CS || t > 60)) a.atPocket = true;
     const cx = clamp(Math.floor(a.x / CS), 0, NX - 1), cy = clamp(Math.floor(a.y / CS), 0, NY - 1);
     let best = f[cy * NX + cx], bx = cx, by = cy;
     for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
@@ -386,8 +393,8 @@ function step() {
     let dx = (bx + .5) * CS - a.x, dy = (by + .5) * CS - a.y;
     // 출구 1.5m 안쪽에서는 문 가운데를 향한다 (문틀에 걸려 멈추지 않게)
     if (seeking && (best < 2 || best >= 1e9)) { dx = a.task.x - a.x; dy = a.task.y - a.y; }
-    else if (!seeking && best < 3) { const e = nearestTarget(a); dx = e.cx - a.x + (e.side === 'E') - (e.side === 'W'); dy = e.cy - a.y + (e.side === 'S') - (e.side === 'N'); }
-    const L = Math.hypot(dx, dy) || 1, v0 = waiting ? 0 : a.escort ? a.v0 : a.v0 * panic;
+    else if (!seeking && !goPocket && best < 3) { const e = nearestTarget(a); dx = e.cx - a.x + (e.side === 'E') - (e.side === 'W'); dy = e.cy - a.y + (e.side === 'S') - (e.side === 'N'); }
+    const L = Math.hypot(dx, dy) || 1, v0 = waiting ? 0 : (a.escort || goPocket) ? a.v0 : a.v0 * panic;
     // 작은 흔들림(Helbing의 fluctuation 항)이 영구 정지를 막는다
     let fx = (dx / L * v0 - a.vx) / TAU + (noise() - .5) * NOISE, fy = (dy / L * v0 - a.vy) / TAU + (noise() - .5) * NOISE;
     const gx = a.x | 0, gy = a.y | 0;
@@ -476,6 +483,11 @@ function step() {
   }
   agents = agents.filter(a => !a.out && !a.inEscort && !a.inStair);
   if (reinsert.length) { agents.push(...reinsert); reinsert = []; }
+  if (Math.round(t / DT) % 25 === 0) {
+    const cnt = new Map();
+    for (const a of agents) { const k = (a.y | 0) * 10000 + (a.x | 0); cnt.set(k, (cnt.get(k) || 0) + 1); }
+    for (const v of cnt.values()) if (v >= 2) expo += v * DT * 25;
+  }
   t += DT;
   if ((!agents.length && !pending.length && !stairList.length) || t > 900) finish();
 }
@@ -509,12 +521,14 @@ function nearestTarget(a) {
 function summary() {
   const ped = [...done.adult, ...done.elder], help = [...done.aid, ...done.wheel];
   const mx = a => a.length ? Math.max(...a) : 0, avg = a => a.length ? a.reduce((s, v) => s + v, 0) / a.length : 0;
-  return { ped: mx(ped), elderAvg: avg(done.elder), helpAvg: avg(help), helpMax: mx(help), cut: t > 900,
+  return { ped: mx(ped), pedAvg: avg(ped), elderAvg: avg(done.elder), helpAvg: avg(help), helpMax: mx(help), expo, cut: t > 900,
     floors: S.floors ? S.floors.map((f, i) => ({ n: f.n, init: floorInit[i], clear: floorLast[i] })) : null, stairs: stairStat.map(s => ({ ...s })) };
 }
 function finish() {
   running = false;
   const s = summary(), R = results[key()] = results[key()] || { '2026': {}, '2035': {} };
+  if (type === 'Z' && round === 0) { computePockets(); round = 1; startRun(true); return; }
+  if (type === 'Z') round = 0;
   if (type === 'E') {
     if (!roundBest || s.ped < roundBest.ped) roundBest = { ...s, cols: cols.map(c => ({ ...c })) };
     if (round < 5) { round++; adapt(); startRun(true); return; }
@@ -524,6 +538,26 @@ function finish() {
   table(); next();
 }
 
+// 조력 포켓: 출구마다 3~14m 안의 기둥 중 흐름 밀도가 가장 낮은 기둥 2개를 고르고, 그 옆 가장 한산한 칸을 포켓으로
+function computePockets() {
+  let hmax = 0; for (let k = 0; k < N; k++) if (heat[k] > hmax) hmax = heat[k];
+  hmax = hmax || 1; pockets = [];
+  const around = (x, y) => { let s = 0; const r = 4, cx = Math.floor(x / CS), cy = Math.floor(y / CS);
+    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { const ax = cx + dx, ay = cy + dy; if (ax >= 0 && ay >= 0 && ax < NX && ay < NY) s += heat[ay * NX + ax]; }
+    return s / hmax; };
+  for (const e of S.exits.filter(q => !q.closed)) {
+    const cand = cols.map(c => ({ c, d: Math.hypot(c.x - e.cx, c.y - e.cy) })).filter(o => o.d > 3 && o.d < 14).map(o => ({ ...o, s: around(o.c.x, o.c.y) })).sort((p, q) => p.s - q.s).slice(0, 2);
+    for (const { c } of cand) {
+      let best = null, bs = Infinity;
+      for (let k = 0; k < 8; k++) {
+        const x = c.x + Math.cos(k * Math.PI / 4) * 1.4, y = c.y + Math.sin(k * Math.PI / 4) * 1.4;
+        if (x < 1 || y < 1 || x > W - 1 || y > H - 1 || blocked[cellOf(x, y)] || !maskOK(x, y)) continue;
+        const sc = around(x, y); if (sc < bs) { bs = sc; best = { x, y }; }
+      }
+      if (best && pockets.every(q => Math.hypot(q.x - best.x, q.y - best.y) > 3)) pockets.push(best);
+    }
+  }
+}
 // 흐름 반응: 밀도가 높았던 자리에서 기둥이 원래 위치 기준 최대 이동 거리 안에서 비켜선다
 function adapt() {
   let hmax = 0; for (let k = 0; k < N; k++) if (heat[k] > hmax) hmax = heat[k];
@@ -590,7 +624,7 @@ function table() {
   const A6 = R['2026'].A, A5 = R['2035'].A;
   $('tb').innerHTML = Object.keys(TYPES).map(k => {
     const r6 = R['2026'][k], r5 = R['2035'][k];
-    return `<tr class="${k === type ? 'cur' : ''}"><td>${k}. ${TYPES[k]}</td><td>${fmt(r6 && r6.ped, A6 && A6.ped)}</td><td>${fmt(r5 && r5.ped, A5 && A5.ped)}</td><td>${fmt(r5 && r5.helpAvg, A5 && A5.helpAvg)}</td><td>${fmt(r5 && r5.helpMax, A5 && A5.helpMax)}</td></tr>`;
+    return `<tr class="${k === type ? 'cur' : ''}"><td>${k}. ${TYPES[k]}</td><td>${fmt(r6 && r6.ped, A6 && A6.ped)}</td><td>${fmt(r5 && r5.ped, A5 && A5.ped)}</td><td>${fmt(r5 && r5.pedAvg, A5 && A5.pedAvg)}</td><td>${fmt(r5 && r5.elderAvg, A5 && A5.elderAvg)}</td><td>${fmt(r5 && r5.expo, A5 && A5.expo)}</td></tr>`;
   }).join('');
   const SR = staffRes[baseKey() + '|' + type] || {}, S1 = SR[1];
   $('tb2').innerHTML = Object.keys(STAFF_SC).map(k => {
@@ -615,7 +649,7 @@ function density() {
 function hud() {
   $('hScen').textContent = scen; $('hType').textContent = type + '. ' + TYPES[type];
   $('hT').textContent = t.toFixed(1); $('hOut').textContent = outCount;
-  $('hRound').innerHTML = type === 'E' && running ? `흐름 반응 <b>${round + 1}</b>/6회차` : '';
+  $('hRound').innerHTML = type === 'E' && running ? `흐름 반응 <b>${round + 1}</b>/6회차` : type === 'Z' && running ? (round ? `포켓 <b>${pockets.length}</b>곳 적용` : '흐름 측정 중 (1회차)') : '';
   const left = { adult: 0, elder: 0, wait: 0, esc: 0 };
   for (const a of [...agents, ...pending]) {
     if (KIND[a.kind].help) left[a.escort ? 'esc' : 'wait']++; else if (left[a.kind] !== undefined) left[a.kind]++;
@@ -694,6 +728,7 @@ function draw() {
     ctx.fillStyle = '#ece9e3'; ctx.fillRect(c.x * s - cs / 2, c.y * s - cs / 2, cs, cs);
     if (moved) { ctx.strokeStyle = '#4cd07d'; ctx.lineWidth = 2; ctx.strokeRect(c.x * s - cs / 2, c.y * s - cs / 2, cs, cs); }
   }
+  for (const q of pockets) { ctx.strokeStyle = '#f472b6'; ctx.fillStyle = 'rgba(244,114,182,.18)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(q.x * s, q.y * s, 1.2 * s, 0, 7); ctx.fill(); ctx.stroke(); }
   for (const a of agents) {
     const rr = Math.max(a.r * s, 1.5);
     ctx.fillStyle = KIND[a.kind].c; ctx.beginPath(); ctx.arc(a.x * s, a.y * s, rr, 0, 7); ctx.fill();

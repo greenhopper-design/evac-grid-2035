@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>조력 구역 그리드 · 2035 서울 피난</title>
+<title>흐름에 반응하는 기둥 그리드 · 2035 서울</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
-/* 피난유도등 밤 화면: 짙은 녹흑 바탕 + 유도등 초록 하나만 강조, 위험은 호박색 */
+/* 피난유도등 밤 화면: 짙은 녹흑 바탕 + 유도등 초록 하나만 강조, 혼잡은 호박색 */
 :root{
   color-scheme:dark;
   --bg:#0e1311; --panel:#151c19; --line:#24302b; --fg:#e9efe9; --mut:#8a9a92;
-  --exit:#2fd37a; --warn:#ffb547; --help:#f472b6; --blue:#5aa9ff;
+  --exit:#2fd37a; --warn:#ffb547; --blue:#5aa9ff;
   --sans:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
 }
@@ -20,14 +20,13 @@ body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);font-
 .wrap{max-width:1040px;margin:0 auto;padding-block:40px 64px;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:56px}
 a{color:var(--exit)}
 .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut)}
-h1{font-size:clamp(30px,5vw,52px);line-height:1.15;margin:8px 0 16px;letter-spacing:-.02em;text-wrap:balance}
+h1{font-size:clamp(30px,5vw,50px);line-height:1.18;margin:8px 0 16px;letter-spacing:-.02em;text-wrap:balance}
 h1 em{font-style:normal;color:var(--exit)}
 h2{font-size:24px;margin:0 0 8px;letter-spacing:-.01em;text-wrap:balance}
 p{margin:0;max-width:68ch}
 .lead{font-size:18px;color:#cdd8d0}
 .cards{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
 .chip{font-size:14px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--panel)}
-.chip b{font-weight:700}
 .cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px}
 .cta a{display:inline-block;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:700;border:1px solid var(--exit)}
 .cta a.primary{background:var(--exit);color:#06130b}
@@ -35,7 +34,7 @@ p{margin:0;max-width:68ch}
 .facts{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 @media(max-width:760px){.facts{grid-template-columns:1fr}}
 .fact{border-top:1px solid var(--line);padding-top:12px}
-.fact .n{font-family:var(--mono);font-size:30px;color:var(--fg)}
+.fact .n{font-family:var(--mono);font-size:30px}
 .fact .n small{font-size:14px;color:var(--mut)}
 .fact p{font-size:14px;color:var(--mut)}
 section{display:flex;flex-direction:column;gap:14px}
@@ -66,7 +65,6 @@ th{color:var(--mut);font-weight:500}
 canvas{width:100%;max-width:100%;display:block;border-radius:8px;background:#101714}
 .note{font-size:13px;color:var(--mut);max-width:80ch}
 footer{font-size:13px;color:var(--mut);border-top:1px solid var(--line);padding-top:16px}
-/* 한 페이지 탭 */
 .tabs{position:sticky;top:0;z-index:10;background:rgba(14,19,17,.94);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);
   padding-top:env(safe-area-inset-top,0px);padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px))}
 .tabs nav{max-width:1280px;margin:0 auto;display:flex;gap:4px;overflow-x:auto}
@@ -81,7 +79,6 @@ footer{font-size:13px;color:var(--mut);border-top:1px solid var(--line);padding-
 .frame .tools{display:flex;gap:8px;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:14px;color:var(--mut);flex-wrap:wrap}
 .frame button,.script button{background:#1b2420;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font:inherit;font-size:14px;cursor:pointer}
 .frame button:focus-visible,.script button:focus-visible{outline:2px solid var(--exit)}
-/* 핸드폰 대본 */
 .script{max-width:640px;margin:0 auto;padding:16px max(16px,env(safe-area-inset-left,0px)) 120px max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:14px}
 .timer{display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:48px;background:var(--bg);padding:8px 0;z-index:5}
 .timer .t{font-family:var(--mono);font-size:34px;font-variant-numeric:tabular-nums}
@@ -113,7 +110,7 @@ footer{font-size:13px;color:var(--mut);border-top:1px solid var(--line);padding-
 </div></div>
 
 <div class="view" id="v-script"><div class="script">
-  <div class="timer"><span class="t" id="tm">0:00</span><span id="cueN" style="color:var(--mut);font-size:14px">1 / 9</span>
+  <div class="timer"><span class="t" id="tm">0:00</span><span id="cueN" style="color:var(--mut);font-size:14px">1 / 8</span>
     <span style="display:flex;gap:6px"><button id="tStart">시작</button><button id="tReset">리셋</button></span></div>
   <p style="font-size:14px;color:var(--mut)">1분 라이트닝 데모용. 카드를 누르면 다음으로 넘어가요. 오른쪽 숫자는 그 슬라이드를 시작할 시각이에요.</p>
   <div id="cues"></div>
@@ -124,8 +121,8 @@ footer{font-size:13px;color:var(--mut);border-top:1px solid var(--line);padding-
 
 <header>
   <div class="eyebrow">AI도시건축디자인론 중간고사 · 2035 미션 카드 해커톤 · 2026.11.03</div>
-  <h1>2035년 지하 피난의 병목은 기둥이 아니라 <em>도움이 필요한 사람</em>이다</h1>
-  <p class="lead">영동대로 지하공간을 대상으로 기둥 배치 5가지와 직원 조력 방식 4가지를 에이전트 시뮬레이션으로 비교했다. 결과를 바탕으로 기둥 그리드를 직원 담당 구역의 틀로 쓰는 <b>조력 구역 그리드</b>를 제안한다.</p>
+  <h1>기둥 그리드를 <em>출구 앞 흐름</em>에 맞춰 바꾸면 2035년의 붐빔이 줄어든다</h1>
+  <p class="lead">2035년 서울의 지하·공공공간 네 곳에서 기둥 배치 5가지를 에이전트 시뮬레이션으로 비교했다. 기둥은 마지막 사람이 나가는 시각보다 <b>출구 앞에서 사람이 몰리는 정도</b>를 바꿨다. 출구 조건마다 맞는 기둥 규칙이 달랐고, 그 규칙을 시뮬레이션으로 고르는 설계 방법을 제안한다.</p>
   <div class="cards">
     <span class="chip">① 무엇을 · <b>기둥 그리드</b></span>
     <span class="chip">② 무엇에 반응하게 · <b>사람의 흐름</b></span>
@@ -140,7 +137,7 @@ footer{font-size:13px;color:var(--mut);border-top:1px solid var(--line);padding-
 
 <section>
   <div class="eyebrow">문제 한 문장</div>
-  <p class="stmt">나는 「기둥 그리드」를 「사람의 흐름」에 반응하게 「에이전트 시뮬레이션」으로 설계한다. 내 시제품은 2035년 노인 이용객이 늘어난 영동대로 지하공간에서, 기둥 배치와 직원 조력 방식에 따라 피난 흐름과 병목이 어떻게 달라지는지 보여 준다.</p>
+  <p class="stmt">나는 「기둥 그리드」를 「사람의 흐름」에 반응하게 「에이전트 시뮬레이션」으로 설계한다. 내 시제품은 2035년 노인 이용객이 늘어난 서울 지하·공공공간에서, 기둥 배치에 따라 피난 흐름의 혼잡이 어떻게 달라지는지 보여 준다.</p>
 </section>
 
 <section>
@@ -148,136 +145,121 @@ footer{font-size:13px;color:var(--mut);border-top:1px solid var(--line);padding-
   <div class="facts">
     <div class="fact"><div class="n">29.3 → 47.7 <small>명</small></div><p>노년부양비 2025 → 2035 전망 (통계청 「2025 고령자 통계」)</p></div>
     <div class="fact"><div class="n">5 <small>개 노선</small></div><p>영동대로 지하 환승센터에 GTX-A·C, 위례신사선, 2·9호선이 모인다. 구조물 공사 2028년까지</p></div>
-    <div class="fact"><div class="n">40 <small>%</small></div><p>서울 지하철역 가운데 비상대피시간 기준을 넘는 역의 비율 (2015 국정감사)</p></div>
+    <div class="fact"><div class="n">2.0~3.6 <small>배</small></div><p>시뮬레이션에서 2026 → 2035 구성으로 바꿨을 때 고밀도(1㎡에 2명 이상) 노출 증가</p></div>
   </div>
 </section>
 
 <section>
   <div class="eyebrow">방법</div>
-  <h2>전문 피난 도구의 핵심만 브라우저로 옮겼다</h2>
+  <h2>전문 피난 도구의 핵심을 브라우저로 옮겼다</h2>
   <div class="grid2">
     <div class="sub">
-      <p>· 이동: 사회력 모델(Helbing·Farkas·Vicsek 2000). 몸 압축력과 마찰을 넣어 출구 앞 아치형 정체가 저절로 생긴다.</p>
-      <p>· 길 찾기: 출구까지의 거리장(JuPedSim·Pathfinder 방식).</p>
-      <p>· 사람 유형·직원 행동: Lim·Lee·Hwang(2023, Buildings 13(2):400) 표 1~3. 자가보행 노인 0.9 m/s, 보행보조기 0.5 m/s, 휠체어 0.83 m/s(직원이 밀면 1.5), 직원 1.3 m/s. 보행보조기·휠체어 사용자는 직원을 기다리고, 직원은 데리고 나간 뒤 다시 들어온다.</p>
-      <p>· 화재 시 엘리베이터는 쓰지 않는다.</p>
+      <p>· 이동: 사회력 모델(Helbing·Farkas·Vicsek 2000). 몸 압축력과 마찰로 출구 앞 아치형 정체가 저절로 생긴다.</p>
+      <p>· 길 찾기: 출구까지의 거리장(JuPedSim·Pathfinder 방식). 층 사이는 계단으로 잇는다.</p>
+      <p>· 사람: 성인 1.2 m/s, 노인 0.9 m/s·어깨 37.9cm(Lim·Lee·Hwang 2023). 2026 구성(노인 12%) vs 2035 구성(노인 22%, 인원 증가).</p>
+      <p>· 지표: 마지막 사람이 나간 시각, 평균 피난 시간, <b style="color:var(--fg)">고밀도 노출</b>(1㎡에 2명 이상인 곳에 있었던 사람·초, Fruin LOS F).</p>
     </div>
     <div class="sub">
       <p><b style="color:var(--fg)">장소</b></p>
-      <p>· 출구 실험실 20×14m (출구 1.2m)</p>
-      <p>· 2호선 삼성역 대합실 96×28m (서울교통공사 구내도 기반)</p>
-      <p>· 영동대로 B3F 통합대합실 140×40m (서울시 층별 배치도 기반)</p>
+      <p>· 출구 실험실 20×14m, 출구 1.2m 하나</p>
+      <p>· 2호선 삼성역 대합실 96×28m, 출구 8개 (구내도 기반)</p>
+      <p>· 영동대로 B3F 통합대합실 140×40m, 출구·계단 10곳 (층별 배치도 기반)</p>
       <p>· 서울시 신청사 1F 로비 + 2F 사무층, 코어 계단 2곳 (공개 실제 평면에서 추출, 3D)</p>
-      <p style="margin-top:8px"><b style="color:var(--fg)">비교</b></p>
-      <p>· 기둥: A 정방형, B 엇갈림, C 넓은 스팬, D 출구 앞 기둥, E 흐름 반응(6회 반복)</p>
-      <p>· 직원: S1 무작위, S2 우선순위, S3 구역 지정, S4 구역+우선순위</p>
-      <p>· 2026 구성(노인 12·보조기 1·휠체어 1%) vs 2035 구성(22·3·2%)</p>
+      <p style="margin-top:8px"><b style="color:var(--fg)">기둥 배치</b></p>
+      <p>· A 정방형 · B 엇갈림 · C 넓은 스팬(1.5배) · D 출구 앞 기둥 · E 흐름 반응(밀도가 높던 자리에서 기둥이 최대 1.5m 비켜섬, 6회 반복)</p>
     </div>
   </div>
 </section>
 
 <section>
-  <div class="eyebrow">결과 1 · 기둥 배치</div>
-  <h2>기둥 유형을 바꿔도 피난 시간은 거의 그대로였다</h2>
+  <div class="eyebrow">결과 1 · 2035년은 더 붐빈다</div>
+  <h2>2026 → 2035 구성으로 바꾸면 고밀도 노출이 2~3.6배가 된다</h2>
+  <div class="chart" id="c0"></div>
+  <p class="note">고밀도 노출(명·초), 기둥 A. 마지막 사람이 나가는 시각은 10~33% 늘지만, 출구 앞에서 붐비는 시간은 훨씬 크게 늘었다. 2035년의 문제는 "늦게 나가는 것"보다 "출구 앞에 몰리는 것"이다.</p>
+</section>
+
+<section>
+  <div class="eyebrow">결과 2 · 기둥 배치</div>
+  <h2>출구 조건마다 붐빔을 줄이는 기둥 배치가 달랐다</h2>
   <div class="grid2">
     <div>
-      <div class="sub">출구 실험실, 2035, 보행자 전원 피난 (초)</div>
+      <div class="sub">출구 실험실 (좁은 출구 하나) · 2035 · 고밀도 노출</div>
       <div class="chart" id="c1"></div>
     </div>
     <div>
-      <div class="sub">삼성역 대합실, 2035, 조력 대상 평균 피난 (초)</div>
+      <div class="sub">B3F 통합대합실 (넓은 출구 여러 개) · 2035 · 고밀도 노출</div>
       <div class="chart" id="c2"></div>
     </div>
   </div>
-  <p class="note">좁은 출구 하나짜리 방에서는 흐름 반응(E)이 9%, 넓은 스팬(C)과 출구 앞 기둥(D)이 6% 줄였다. 출구가 여럿인 대합실에서는 보행자 피난 시간 차이가 1% 안팎이었다. 출구 3·4·5번을 막은 화재 조건에서도 A 77.6초, D 77.4초로 같았다.</p>
-</section>
-
-<section>
-  <div class="eyebrow">결과 2 · 2035년과 직원 조력</div>
-  <h2>2035년에는 조력 대상의 피난 시간이 2.4배로 늘고, 직원 구역 지정이 그 절반을 되돌린다</h2>
-  <div class="grid2">
-    <div>
-      <div class="sub">조력 대상 평균 피난 (초), 기둥 A, 직원 구역 지정</div>
-      <div class="chart" id="c3"></div>
-    </div>
-    <div>
-      <div class="sub">2035 조력 대상 평균 피난 (초), 직원 행동별</div>
-      <div class="chart" id="c4"></div>
-    </div>
-  </div>
   <div class="tablewrap"><table>
-    <thead><tr><th>직원 행동 (2035, 기둥 A)</th><th>삼성역 평균</th><th>삼성역 마지막</th><th>B3F 평균</th><th>B3F 마지막</th></tr></thead>
+    <thead><tr><th>2035 · A 대비</th><th>실험실 평균</th><th>실험실 노출</th><th>삼성역 평균</th><th>삼성역 노출</th><th>B3F 평균</th><th>B3F 노출</th></tr></thead>
     <tbody>
-      <tr><td>S1 무작위</td><td>155.9</td><td>330.4</td><td>252.3</td><td>471.4</td></tr>
-      <tr><td>S2 우선순위(휠체어 먼저)</td><td>158.6 <span class="bad">+2%</span></td><td>348.1</td><td>268.0 <span class="bad">+6%</span></td><td>592.9</td></tr>
-      <tr><td>S3 구역 지정</td><td>92.2 <span class="good">−41%</span></td><td>230.5 <span class="good">−30%</span></td><td>113.8 <span class="good">−55%</span></td><td>253.0 <span class="good">−46%</span></td></tr>
-      <tr><td>S4 구역 지정+우선순위</td><td>86.2 <span class="good">−45%</span></td><td>233.8</td><td>111.0 <span class="good">−56%</span></td><td>291.6</td></tr>
+      <tr><td>A 정방형</td><td>22.4초</td><td>2,572</td><td>18.6초</td><td>2,985</td><td>22.9초</td><td>5,804</td></tr>
+      <tr><td>B 엇갈림</td><td class="good">−17%</td><td class="good">−19%</td><td>+2%</td><td class="good">−3%</td><td>0%</td><td>0%</td></tr>
+      <tr><td>C 넓은 스팬</td><td class="good">−6%</td><td class="good">−6%</td><td class="bad">+3%</td><td class="bad">+6%</td><td>−1%</td><td class="bad">+2%</td></tr>
+      <tr><td>D 출구 앞 기둥</td><td>−1%</td><td>−1%</td><td>−1%</td><td class="good">−5%</td><td class="good">−2%</td><td class="good">−11%</td></tr>
+      <tr><td>E 흐름 반응</td><td class="good">−14%</td><td class="good">−14%</td><td>+1%</td><td class="bad">+4%</td><td>0%</td><td class="bad">+1%</td></tr>
     </tbody>
   </table></div>
-  <p class="note">직원 수는 삼성역 6명, B3F 10명. 구역 지정이 가장 중요하고 우선순위만으로는 효과가 없다는 점은 Lim 외(2023)의 결론과 같다. 공간이 클수록 효과가 커졌다(41% → 55%). 무작위로 고르면 직원이 넓은 대합실을 가로질러 오가기 때문이다.</p>
+  <p class="note">좁은 출구 하나 앞에서는 엇갈림(B)과 흐름 반응(E)이 사람을 여러 줄로 나눠 평균 피난을 14~17% 줄였다. 넓은 출구가 여러 개인 대합실에서는 출구 앞 기둥(D)이 문 앞 몰림을 11% 줄였다. 2026 구성에서도 B3F의 D는 −12%였다. 두 규칙을 섞은 배치는 오히려 효과가 없었다(별도 실험).</p>
 </section>
 
 <section>
   <div class="eyebrow">결과 3 · 실제 도면 층별 분석 (서울시 신청사 1F·2F)</div>
-  <h2>실제 도면에서도 구역 지정이 가장 크고, 병목은 한쪽 계단에 몰렸다</h2>
-  <p class="sub">ArchDaily에 공개된 서울시 신청사(iArc) 지상1층·2층 평면(1/250)에서 벽·코어·기둥을 그대로 추출해, 2F 사무층 사람은 코어 계단 2곳으로 1F 로비에 내려오고 출구 4곳으로 나가게 했다. 축척은 X3~X16 치수 106.5m 기준. 2035 구성, 600명(1F 65%·2F 35%), 직원 8명. 시뮬레이터에서 3D로 층을 쌓아 볼 수 있다.</p>
+  <h2>실제 도면에서는 사람들이 가까운 계단 하나로 몰렸다</h2>
+  <p class="sub">ArchDaily에 공개된 서울시 신청사(iArc) 지상1·2층 평면(1/250)에서 벽·코어·기둥을 그대로 추출했다. 2F 사람은 코어 계단 2곳으로 1F 로비에 내려와 출구 4곳으로 나간다. 축척은 X3~X16 치수 106.5m 기준. 시뮬레이터에서 3D로 두 층을 쌓아 볼 수 있다.</p>
   <div class="tablewrap"><table>
-    <thead><tr><th>조건</th><th>보행자 전원</th><th>조력 평균</th><th>2F 비움</th><th>1F 비움</th><th>계단 1 통과/최대 대기</th><th>계단 2 통과/최대 대기</th></tr></thead>
+    <thead><tr><th>조건</th><th>전원</th><th>평균</th><th>고밀도 노출</th><th>2F 비움</th><th>계단 1 통과/최대 대기</th><th>계단 2 통과/최대 대기</th></tr></thead>
     <tbody>
-      <tr><td>2035 · S1 무작위</td><td>138.6</td><td>199.9</td><td>320.1</td><td>364.3</td><td>89 / 45</td><td>146 / 85</td></tr>
-      <tr><td>2035 · S2 우선순위</td><td>139.5</td><td>172.2 <span class="good">−14%</span></td><td>276.0</td><td>376.2</td><td>89 / 45</td><td>146 / 86</td></tr>
-      <tr><td>2035 · S3 구역 지정</td><td>138.9</td><td>139.4 <span class="good">−30%</span></td><td>245.6 <span class="good">−23%</span></td><td>346.8</td><td>89 / 43</td><td>144 / 87</td></tr>
-      <tr><td>2035 · S4 구역+우선순위</td><td>137.9</td><td>131.6 <span class="good">−34%</span></td><td>299.3</td><td>399.2</td><td>90 / 44</td><td>143 / 87</td></tr>
-      <tr><td>2026 · S3</td><td>112.0</td><td>88.1</td><td>202.4</td><td>302.6</td><td>56 / 17</td><td>95 / 59</td></tr>
-      <tr><td>2035 · S3 · 주출입구 폐쇄</td><td>129.1</td><td>173.1 <span class="bad">+24%</span></td><td>276.0</td><td>390.3</td><td>125 / 64</td><td>108 / 75</td></tr>
+      <tr><td>2026 · 400명</td><td>107.0초</td><td>29.6초</td><td>3,507</td><td>61.4초</td><td>53 / 19</td><td>94 / 59</td></tr>
+      <tr><td>2035 · 600명</td><td>142.6초</td><td>35.6초</td><td class="bad">8,908</td><td>90.4초</td><td>87 / 46</td><td class="bad">138 / 91</td></tr>
     </tbody>
   </table></div>
-  <p class="note">계단 2가 계단 1보다 1.6배 많은 사람을 받고 최대 대기도 2배(85명 vs 45명)였다. 2F 사람 대부분이 가까운 계단 2로 몰리기 때문이다. 2026 → 2035에 조력 평균은 1.6배, 2F 비움 시간은 202초 → 246초로 늘었다. 초 단위, 수치는 비교용.</p>
+  <p class="note">계단 2가 계단 1보다 1.6배 많은 사람을 받고, 최대 대기는 2배(91명 vs 46명)였다. 이 도면은 해상도(약 0.21m/px) 때문에 가구와 기둥이 함께 장애물로 들어가, 기둥 유형은 바꿔 보지 않았다.</p>
 </section>
 
 <section>
   <div class="eyebrow">발견</div>
-  <div class="finding"><div class="k">1</div><p>대형 지하공간에서 기둥 배치는 걷는 사람의 피난 시간을 거의 바꾸지 못한다. 병목은 출구와 계단 폭이 만든다.</p></div>
-  <div class="finding"><div class="k">2</div><p>2035년의 진짜 병목은 혼자 나갈 수 없는 사람이다. 같은 공간에서 조력 대상의 평균 피난 시간이 2.4배가 된다.</p></div>
-  <div class="finding"><div class="k">3</div><p>그 시간을 줄이는 가장 큰 변수는 직원이 누구를 맡느냐다. 구역을 나눠 맡기면 41~56% 줄고, 넓을수록 효과가 크다.</p></div>
-  <div class="finding"><div class="k">4</div><p>출구 앞 기둥은 좁고 붐비는 출구에서만 도움이 된다(−6%). 넓은 출구 앞에서는 효과가 없거나 방해가 된다.</p></div>
-  <div class="finding"><div class="k">5</div><p>여러 층에서는 사람들이 가까운 계단 하나로 몰린다. 서울시청 2F에서 계단 2의 대기가 계단 1의 2배였다. 층마다 어느 구역이 어느 계단을 쓸지 정해야 한다.</p></div>
+  <div class="finding"><div class="k">1</div><p>기둥은 마지막 사람이 나가는 시각보다 출구 앞 붐빔을 바꾼다. 그래서 평가 지표를 고밀도 노출로 잡아야 기둥의 효과가 보인다.</p></div>
+  <div class="finding"><div class="k">2</div><p>좁은 출구 앞에서는 기둥을 엇갈려 세우면 사람이 여러 줄로 나뉘어 평균 피난이 17% 줄어든다.</p></div>
+  <div class="finding"><div class="k">3</div><p>넓은 출구가 여러 개인 곳에서는 문 앞에 기둥 하나를 두면 문 앞 몰림이 11% 줄어든다. 출구가 흐름을 정하는 역 대합실에서는 어떤 기둥 배치도 5% 안팎이었다.</p></div>
+  <div class="finding"><div class="k">4</div><p>정답 배치는 하나가 아니다. 출구 폭과 개수에 따라 규칙이 바뀌고, 좋은 규칙을 섞는다고 더 좋아지지도 않는다. 장소마다 시뮬레이션으로 골라야 한다.</p></div>
+  <div class="finding"><div class="k">5</div><p>여러 층에서는 가까운 계단 하나에 대기가 2배로 몰린다. 기둥 열로 동선을 갈라 계단을 나눠 쓰게 하는 것이 다음 과제다.</p></div>
 </section>
 
 <section>
   <div class="eyebrow">설계 제안</div>
-  <h2>조력 구역 그리드: 기둥 그리드를 직원 담당 구역의 틀로 쓴다</h2>
+  <h2>출구 반응형 기둥 그리드: 출구마다 기둥 규칙을 시뮬레이션으로 고른다</h2>
   <div class="proposal">
     <ol>
-      <li><b>기둥 3×2칸을 직원 1명의 담당 구역으로 묶는다</b>기둥에 구역 번호와 색을 넣고 바닥에 구역 경계 띠를 깐다. 직원은 화재 때 자기 구역만 맡는다(S3). 시뮬레이션에서 조력 대상 평균 피난 시간을 41~56% 줄인 조건이다.</li>
-      <li><b>구역마다 출구 가까운 칸 하나를 조력 대기 포켓으로 비운다</b>휠체어·보행보조기 사용자가 기다릴 자리를 정해 직원이 찾는 시간을 없앤다. Lim 외(2023)는 휠체어 사용자를 출구 가까이 두라고 권한다. 이 항목은 아직 시뮬레이션으로 검증하지 않았다.</li>
-      <li><b>출구 앞 흐름 분리 기둥은 폭 1.5m 이하 좁은 출구에만 둔다</b>문에서 1.7m 앞. 좁은 출구 실험에서만 6% 효과가 있었고, 3m 이상 출구에서는 효과가 없었다.</li>
-      <li><b>구역 경계는 계단과 출구 위치에 맞춰 긋고, 구역마다 쓸 계단을 정한다</b>각 구역이 계단 하나와 출구 하나 이상을 갖도록 기둥 열을 정렬한다. 서울시청 2F처럼 한 계단에 대기가 2배로 몰리는 일을 막는다. 계단 배정 효과는 다음 단계에서 검증한다.</li>
+      <li><b>기본은 정방형 그리드로 둔다</b>흐름이 적은 곳에서는 배치를 바꿔도 차이가 없었다. 구조와 공간 활용을 우선한다.</li>
+      <li><b>폭 1.5m 이하 좁은 출구 앞 12m는 엇갈림 그리드로 바꾼다</b>사람이 여러 줄로 나뉘어 평균 피난 −17%, 고밀도 노출 −19%.</li>
+      <li><b>폭 3m 이상 출구가 여러 개면 문 앞 약 3.6m에 흐름 분리 기둥을 둔다</b>문 앞 몰림 −11% (B3F), 2026 구성에서도 −12%.</li>
+      <li><b>설계 단계마다 2035년 이용자 구성으로 시뮬레이션을 돌려 출구별 규칙을 확인한다</b>섞은 배치는 효과가 없었다. 규칙은 장소마다 시뮬레이션으로 정한다.</li>
+      <li><b>여러 층 건물은 계단 앞 기둥 열로 동선을 나눈다</b>서울시청 2F처럼 한 계단에 대기가 2배로 몰리지 않게 한다. 이 항목은 다음 단계에서 검증한다.</li>
     </ol>
     <div>
-      <canvas id="dia" width="560" height="300" aria-label="조력 구역 그리드 개념도"></canvas>
-      <p class="note" style="margin-top:8px">개념도: 기둥(흰 점) 그리드를 구역(색 칸)으로 나누고, 출구(초록) 옆 칸을 조력 대기 포켓(분홍)으로 둔다.</p>
+      <canvas id="dia" width="560" height="300" aria-label="출구 반응형 기둥 그리드 개념도"></canvas>
+      <p class="note" style="margin-top:8px">개념도: 정방형 그리드(흰 점)를 기본으로, 좁은 출구(왼쪽) 앞은 엇갈림, 넓은 출구(오른쪽) 앞에는 흐름 분리 기둥(초록 테두리)을 둔다. 점선은 시뮬레이션의 주 흐름.</p>
     </div>
   </div>
 </section>
 
 <section>
   <div class="eyebrow">한계와 다음 단계</div>
-  <p class="sub">· 삼성역·B3F 평면은 구내도와 층별 배치도를 비율로 따라 그린 개략 평면이다. 서울시청은 공개 평면에서 추출했지만 해상도(약 0.21m/px) 때문에 가구와 기둥이 함께 장애물로 들어갔고, 그래서 이 사례에서는 기둥 유형을 바꿔 보지 않았다.</p>
-  <p class="sub">· 구역별 계단 배정(제안 4)을 시뮬레이션에 넣어 계단 편중이 줄어드는지 확인한다.</p>
+  <p class="sub">· 삼성역·B3F 평면은 구내도와 층별 배치도를 비율로 따라 그린 개략 평면이고, 치수는 추정이다. 서울시청은 공개 평면에서 추출했지만 해상도가 낮다.</p>
   <p class="sub">· 수치는 가정값으로 돌린 유형 비교용이며 RSET 산정값이 아니다. 같은 평면을 Pathfinder로 돌려 교차 검증한다.</p>
-  <p class="sub">· 조력 대기 포켓(제안 2)은 시뮬레이션에 넣어 효과를 확인한다.</p>
-  <p class="sub">· 이용자 비율과 직원 수는 가정값이다. 실제 이용 통계로 바꾼다.</p>
+  <p class="sub">· 휠체어·보행보조기 사용자와 직원 조력은 이번 비교에서 뺐다. 기둥 효과를 먼저 분리해 보기 위해서다.</p>
+  <p class="sub">· 계단 앞 기둥 열로 계단 편중을 줄이는 배치(제안 5)를 시뮬레이션으로 확인한다.</p>
 </section>
 
 <footer>
   참고: Helbing, Farkas, Vicsek (2000) Nature 407 · Lim, Lee, Hwang (2023) Buildings 13(2):400 · 서울교통공사 삼성역 구내도(내 손안에 서울, 2025.05) · 서울균형발전포털 영동대로 층별 배치계획 · 서울시 신청사 지상1·2층 평면도(iArc, ArchDaily 게재; 이 사이트에는 원본 이미지 대신 추출한 보행 영역만 담음) · 통계청 「2025 고령자 통계」 · Fruin 보행 서비스 수준.<br>
-  AI 활용: Claude와 함께 제작. 장소·카드 해석·직원 시나리오 채택·설계 제안 선택은 작성자가 정함.
+  AI 활용: Claude와 함께 제작. 장소·카드 해석·평가 지표·설계 제안 선택은 작성자가 정함.
 </footer>
 </div>
 </div>
 <script>
-// 탭: #report · #slides · #sim · #script (폰 폭이면 대본부터)
 const VIEWS = ['report', 'slides', 'sim', 'script'];
 function route() {
   let v = location.hash.slice(1);
@@ -292,15 +274,14 @@ document.getElementById('fs').onclick = () => { const f = document.getElementByI
 
 // 1분 대본: [시작 초, 슬라이드 제목, 말할 내용, 동작]
 const CUES = [
-  [0, '표지', '제 카드는 기둥 그리드, 사람의 흐름, 에이전트 시뮬레이션입니다. 결론부터 말하면, 2035년 지하 피난의 병목은 기둥이 아니라 도움이 필요한 사람이었습니다.'],
-  [9, '문제', '2035년 영동대로 지하에는 노선 다섯 개가 모이고, 노년부양비는 47.7까지 올라갑니다.'],
-  [15, '방법', 'Helbing 사회력 모델과 요양원 직원 조력 논문 값을 웹에 구현해서, 지하철역 두 곳과 서울시청 실제 도면에서 비교했습니다.'],
-  [22, '결과 1', '기둥을 바꿔도 피난 시간은 거의 그대로였습니다.'],
-  [27, '결과 2', '대신 2035년에는 휠체어·보행보조기 사용자의 피난 시간이 2.4배로 늘었습니다.'],
-  [33, '결과 3', '직원이 구역을 나눠 맡으면 이 시간이 41에서 56퍼센트 줄었습니다.', '시뮬레이터로 S1 → S3 장면을 보여 줄 수 있으면 여기서'],
-  [39, '결과 4', '서울시청 실제 도면에서는 사람들이 한 계단에 몰려 대기가 두 배였습니다.', '3D 보기로 두 층을 보여 줄 수 있으면 여기서'],
-  [45, '설계 제안', '그래서 조력 구역 그리드를 제안합니다. 기둥 3×2칸을 직원 한 명의 구역으로 묶고, 구역마다 대기 포켓과 쓸 계단을 정합니다.'],
-  [55, '정리', '기둥은 흐름을 막는 물체가 아니라, 누가 누구를 도울지 정하는 틀입니다. 감사합니다.'],
+  [0, '표지', '제 카드는 기둥 그리드, 사람의 흐름, 에이전트 시뮬레이션입니다. 기둥 그리드를 출구 앞 흐름에 맞춰 바꾸면 2035년의 붐빔이 줄어든다는 결과를 보여 드리겠습니다.'],
+  [10, '문제', '2035년 서울은 노년부양비가 47.7이 되고, 영동대로 지하엔 노선 다섯 개가 모입니다.'],
+  [16, '방법', '사회력 모델을 웹에 구현해서, 지하철역과 서울시청 실제 도면 네 곳에서 기둥 배치 다섯 가지를 비교했습니다.'],
+  [23, '결과 1', '2035년 구성으로 바꾸면 출구 앞 고밀도 노출이 2에서 3.6배로 늘었습니다.'],
+  [30, '결과 2', '좁은 출구 앞은 엇갈림 그리드가 평균 피난을 17퍼센트, 넓은 출구 여러 개는 문 앞 기둥이 몰림을 11퍼센트 줄였습니다.', '시뮬레이터에서 실험실 A → B를 보여 줄 수 있으면 여기서'],
+  [40, '결과 3', '서울시청 실제 도면에선 사람들이 한 계단에 몰려 대기가 두 배였습니다.', '3D 보기로 두 층을 보여 줄 수 있으면 여기서'],
+  [46, '설계 제안', '그래서 출구 반응형 기둥 그리드를 제안합니다. 출구마다 기둥 규칙을 시뮬레이션으로 골라 배치합니다.'],
+  [54, '정리', '기둥은 구조만이 아니라, 흐름을 나누는 도구가 됩니다. 감사합니다.'],
 ];
 const fmtT = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 let cur = 0, t0 = null, tick = null;
@@ -322,41 +303,34 @@ function start() {
 document.getElementById('tStart').onclick = start;
 document.getElementById('tReset').onclick = () => { clearInterval(tick); tick = null; t0 = null; document.getElementById('tm').textContent = '0:00'; document.getElementById('tm').classList.remove('over'); setCue(0); };
 setCue(0); route();
+
+const bars = (id, rows, max) => {
+  document.getElementById(id).innerHTML = rows.map(([k, v, cls]) =>
+    `<div class="bar"><span>${k}</span><div class="track"><div class="fill ${cls || ''}" style="width:${(v / max * 100).toFixed(1)}%"></div></div><span class="v">${v.toLocaleString()}</span></div>`).join('');
+};
+bars('c0', [['실험실 2026', 1304], ['실험실 2035', 2572, 'bad'], ['삼성역 2026', 835], ['삼성역 2035', 2985, 'bad'], ['B3F 2026', 2236], ['B3F 2035', 5804, 'bad'], ['서울시청 2026', 3507], ['서울시청 2035', 8908, 'bad']], 9500);
+bars('c1', [['A 정방형', 2572], ['B 엇갈림', 2084, 'good'], ['C 넓은 스팬', 2407], ['D 출구 앞 기둥', 2538], ['E 흐름 반응', 2222, 'good']], 2800);
+bars('c2', [['A 정방형', 5804], ['B 엇갈림', 5798], ['C 넓은 스팬', 5907], ['D 출구 앞 기둥', 5192, 'good'], ['E 흐름 반응', 5881]], 6200);
+
+// 출구 반응형 기둥 그리드 개념도
+const c = document.getElementById('dia').getContext('2d'), ox = 40, oy = 40, bay = 60, cols = 9, rows = 4;
+c.fillStyle = '#101714'; c.fillRect(0, 0, 560, 300);
+c.strokeStyle = '#8a9a92'; c.lineWidth = 2; c.strokeRect(ox - 20, oy - 20, (cols - 1) * bay + 40, (rows - 1) * bay + 40);
+c.fillStyle = '#2fd37a'; c.fillRect(ox - 26, oy + 1.5 * bay - 10, 12, 20); c.fillRect(ox + (cols - 1) * bay + 14, oy + 0.5 * bay - 22, 12, 44); c.fillRect(ox + (cols - 1) * bay + 14, oy + 2.5 * bay - 22, 12, 44);
+c.setLineDash([5, 5]); c.strokeStyle = 'rgba(255,181,71,.6)';
+[[ox + 3 * bay, oy + 1.5 * bay, ox - 20, oy + 1.5 * bay], [ox + 5 * bay, oy + 1.5 * bay, ox + (cols - 1) * bay + 20, oy + 0.5 * bay], [ox + 5 * bay, oy + 1.5 * bay, ox + (cols - 1) * bay + 20, oy + 2.5 * bay]].forEach(([a, b, x, y]) => { c.beginPath(); c.moveTo(a, b); c.lineTo(x, y); c.stroke(); });
+c.setLineDash([]);
+for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+  const near = i <= 1, x = ox + i * bay + (near && j % 2 ? bay / 2 : 0), y = oy + j * bay;
+  c.fillStyle = '#e9efe9'; c.fillRect(x - 4, y - 4, 8, 8);
+}
+[[ox + (cols - 1) * bay - 6, oy + 0.5 * bay], [ox + (cols - 1) * bay - 6, oy + 2.5 * bay]].forEach(([x, y]) => { c.fillStyle = '#e9efe9'; c.fillRect(x - 5, y - 5, 10, 10); c.strokeStyle = '#2fd37a'; c.lineWidth = 2; c.strokeRect(x - 7, y - 7, 14, 14); });
+c.font = '13px "IBM Plex Sans KR", sans-serif'; c.fillStyle = '#e9efe9';
+c.fillText('좁은 출구 앞: 엇갈림', ox - 10, oy + (rows - 1) * bay + 44); c.fillText('넓은 출구 앞: 흐름 분리 기둥', ox + 5 * bay - 20, oy + (rows - 1) * bay + 44);
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 if (window.QRCode) new QRCode(document.getElementById('qr'), { text: location.origin + location.pathname.replace(/index\.html$/, '') + '#script', width: 120, height: 120, correctLevel: QRCode.CorrectLevel.M });
-</script>
-<script>
-const bars = (id, rows, max, goodFn) => {
-  document.getElementById(id).innerHTML = rows.map(([k, v, cls]) =>
-    `<div class="bar"><span>${k}</span><div class="track"><div class="fill ${cls || ''}" style="width:${(v / max * 100).toFixed(1)}%"></div></div><span class="v">${v.toFixed(1)}</span></div>`).join('');
-};
-bars('c1', [['A 정방형', 38.9], ['B 엇갈림', 38.4], ['C 넓은 스팬', 36.4, 'good'], ['D 출구 앞 기둥', 36.6, 'good'], ['E 흐름 반응', 35.3, 'good']], 45);
-bars('c2', [['A 정방형', 92.2], ['B 엇갈림', 93.5], ['C 넓은 스팬', 89.0], ['D 출구 앞 기둥', 85.5, 'good'], ['E 흐름 반응', 89.8]], 110);
-bars('c3', [['삼성역 2026', 38.4], ['삼성역 2035', 92.2, 'bad'], ['B3F 2026', 47.1], ['B3F 2035', 113.8, 'bad']], 130);
-bars('c4', [['삼성역 S1 무작위', 155.9, 'bad'], ['삼성역 S3 구역 지정', 92.2, 'good'], ['B3F S1 무작위', 252.3, 'bad'], ['B3F S3 구역 지정', 113.8, 'good']], 270);
-
-// 조력 구역 그리드 개념도
-const cv = document.getElementById('dia'), c = cv.getContext('2d');
-const W = 560, H = 300, s = 8, cols = 9, rows = 4, ox = 40, oy = 40, bay = 60;
-const zc = ['#2b4a3a', '#2a3e52', '#4a3d2a', '#3f2c48'];
-c.fillStyle = '#101714'; c.fillRect(0, 0, W, H);
-for (let j = 0; j < rows - 1; j++) for (let i = 0; i < cols - 1; i++) {
-  const z = Math.floor(i / 2) % 4;
-  c.fillStyle = zc[z]; c.fillRect(ox + i * bay + 1, oy + j * bay + 1, bay - 2, bay - 2);
-}
-c.strokeStyle = '#8a9a92'; c.lineWidth = 2; c.strokeRect(ox - 10, oy - 10, (cols - 1) * bay + 20, (rows - 1) * bay + 20);
-[[1, 0], [3, 2], [5, 0], [7, 2]].forEach(([i, j], k) => {
-  c.fillStyle = 'rgba(244,114,182,.55)'; c.fillRect(ox + i * bay + 1, oy + j * bay + 1, bay - 2, bay - 2);
-  const ex = ox + i * bay + bay / 2, ey = j === 0 ? oy - 10 : oy + (rows - 1) * bay + 10;
-  c.fillStyle = '#2fd37a'; c.fillRect(ex - 18, ey - 5, 36, 10);
-});
-c.fillStyle = '#e9efe9';
-for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) c.fillRect(ox + i * bay - 4, oy + j * bay - 4, s, s);
-c.font = '13px "IBM Plex Sans KR", sans-serif'; c.fillStyle = '#e9efe9';
-['구역 1', '구역 2', '구역 3', '구역 4'].forEach((t, k) => c.fillText(t, ox + k * 2 * bay + 34, oy + (rows - 1) * bay + 40));
-c.fillStyle = '#8a9a92'; c.fillText('출구', ox + bay * 1.5 - 12, oy - 18);
 </script>
 </body>
 </html>

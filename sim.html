@@ -55,6 +55,8 @@ tr.cur td{background:#23303a}
   <div class="card">
     <div class="btns" id="sites" style="margin-bottom:8px"></div>
     <canvas id="cv"></canvas>
+    <canvas id="cv3" hidden style="height:460px;border-radius:8px;margin-top:8px;cursor:grab"></canvas>
+    <div class="note" id="floorBox" hidden style="margin-top:8px"></div>
     <div class="hud">
       <span>시나리오 <b id="hScen">-</b></span>
       <span>기둥 <b id="hType">-</b></span>
@@ -97,6 +99,7 @@ tr.cur td{background:#23303a}
         <button id="run" class="go">▶ 이 유형 피난</button>
         <button id="all">전체 비교 A→E</button>
         <button id="heat" class="on">실시간 밀도</button>
+        <button id="b3d">3D 보기</button>
       </div>
     </div>
     <div class="card">
@@ -115,6 +118,8 @@ tr.cur td{background:#23303a}
     </div>
   </div>
 </div>
+<script src="cityhall_data.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 // ---------- 장소 (m). 위 = 북쪽. solids = 실·벽, voids = 아래층에서 올라오는 계단(출발점) ----------
@@ -156,6 +161,17 @@ if (window.COEX_B1) {
   };
 }
 // 노인·직원 값은 Lim·Lee·Hwang(2023) 표 1·2 (속도 m/s, r = 어깨폭/2). assist = 직원 조력 시 속도
+// 서울시 신청사 1F 로비 + 2F 사무층: ArchDaily 공개 평면(지상1·2층, 1/250)에서 보행 영역을 추출. 두 층을 나란히 놓고 코어 계단으로 잇는다
+if (window.CITYHALL) {
+  const C = CITYHALL, nx = Math.round(C.W / C.grid), ny = Math.round(C.H / C.grid), b = atob(C.mask), m = new Uint8Array(nx * ny);
+  for (let i = 0; i < m.length; i++) m[i] = (b.charCodeAt(i >> 3) >> (7 - (i & 7))) & 1;
+  SITES.cityhall = {
+    name: '3. 서울시청 1F·2F (실제 평면)', W: C.W, H: C.H, grid: C.grid, sp: 8.4, cs: .9, n: [400, 600], st: 8, fromVoid: 0, zoomZ: 3, fixedCols: true,
+    note: '서울시 신청사(iArc) 지상1층·2층 평면도(ArchDaily 공개, 1/250)에서 보행 영역을 추출 · 축척은 X3~X16 치수 106.5m 기준 · 2F 사람은 코어 계단 2곳으로 1F에 내려와 출구 4곳으로 나감 · 기둥·벽은 도면 그대로',
+    exits: C.exits, elevs: [], voids: [], solids: [], mask: m, maskCS: C.grid, maskW: nx,
+    floors: C.floors, spawnW: [.65, .35], portals: C.portals.map(p => ({ ...p, next: { up: 0, dn: 0 } })),
+  };
+}
 const KIND = {
   adult: { v: 1.2, r: .23, c: '#5aa9ff' },
   elder: { v: .9, r: .19, c: '#ff9f43' },
@@ -173,7 +189,8 @@ const staffRes = {};
 const TYPES = { A: '정방형 그리드', B: '엇갈림 그리드', C: '넓은 스팬(1.5배)', D: '출구 앞 기둥', E: '흐름 반응 그리드' };
 let CS = .5;
 const DT = .02;
-const maskOK = (x, y) => !S.mask || (x >= 0 && y >= 0 && x < W && y < H && S.mask[(y | 0) * W + (x | 0)] === 1);
+const maskOK = (x, y) => { if (!S.mask) return true; const c = S.maskCS || 1, mw = S.maskW || W; return x >= 0 && y >= 0 && x < W && y < H && S.mask[Math.floor(y / c) * mw + Math.floor(x / c)] === 1; };
+const floorOf = x => S.floors ? Math.max(0, S.floors.findIndex(f => x >= f.x0 - 1 && x <= f.x1 + 1)) : 0;
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const rectDist = (v, x, y) => Math.hypot(x - clamp(x, v.x0, v.x1), y - clamp(y, v.y0, v.y1));
 function rng(seed) { return () => { seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
@@ -203,10 +220,12 @@ function loadSite(id) {
   for (const b of $('sites').children) b.classList.toggle('on', b.dataset.k === id);
   agents = []; pending = []; t = 0; running = false; zoom = null; queue = [];
   showVals(); cols = layout(type); rebuild(); resize(); table();
+  if (typeof v3 !== 'undefined' && v3.on) { if (R3) R3.renderer.dispose(); R3 = build3d(); }
 }
 
 // ---------- 기둥 배치 유형 ----------
 function layout(tp) {
+  if (S.fixedCols) return [];
   const s = +$('sp').value * (tp === 'C' ? 1.5 : 1), m = S.sp * .5, out = [];
   const nx = Math.max(1, Math.floor((W - 2 * m) / s) + 1), ny = Math.max(1, Math.floor((H - 2 * m) / s) + 1);
   const ox = (W - (nx - 1) * s) / 2, oy = (H - (ny - 1) * s) / 2;
@@ -243,6 +262,15 @@ function rebuild() {
     if (!colHash.has(k)) colHash.set(k, []); colHash.get(k).push(c);
   }
   const open = S.exits.filter(e => !e.closed);
+  // 계단: 위·아래 칸을 계단 길이만큼의 비용으로 잇는다 (양방향, 직원이 올라갈 때도 같은 길)
+  portalLink = new Int32Array(N).fill(-1); portalCells = [];
+  for (const p of S.portals || []) for (const side of ['up', 'dn']) {
+    const [px, py] = p[side], cells = [];
+    for (let k = 0; k < N; k++) if (!blocked[k] && Math.hypot((k % NX + .5) * CS - px, ((k / NX | 0) + .5) * CS - py) < p.r) cells.push(k);
+    portalCells.push({ cells, other: null, len: p.len }); p[side + 'Idx'] = portalCells.length - 1;
+  }
+  for (const p of S.portals || []) { portalCells[p.upIdx].other = p.dnIdx; portalCells[p.dnIdx].other = p.upIdx; }
+  portalCells.forEach((pc, i) => pc.cells.forEach(k => portalLink[k] = i));
   stairF = dijkstra(open);
   elevF = S.elevs.length ? dijkstra(S.elevs) : stairF;
 }
@@ -269,9 +297,14 @@ function dijkstra(targets) {
       if (blocked[nk] || (dx && dy && (blocked[y * NX + ax] || blocked[ay * NX + x]))) continue;
       if (dd + w < d[nk]) { d[nk] = dd + w; push(dd + w, nk); }
     }
+    if (portalLink[k] >= 0) {
+      const pc = portalCells[portalLink[k]], o = portalCells[pc.other], nd = dd + pc.len / CS;
+      for (const nk of o.cells) if (nd < d[nk]) { d[nk] = nd; push(nd, nk); }
+    }
   }
   return d;
 }
+let portalLink = new Int32Array(1).fill(-1), portalCells = [], stairList = [], floorLast = [], stairStat = [], floorInit = [];
 
 // 같은 장소·시나리오는 같은 시드 → 유형끼리 같은 사람들로 비교
 function population() {
@@ -283,7 +316,16 @@ function population() {
     let x, y, rel = 0;
     const fromVoid = S.voids.length && R() < S.fromVoid;
     if (fromVoid && !KIND[kind].help && kind !== 'staff') { const v = S.voids[Math.floor(R() * S.voids.length)], left = R() < .5; x = left ? v.x0 - .6 : v.x1 + .6; y = v.y0 + .4 + R() * (v.y1 - v.y0 - .8); rel = R() * 45; }
-    else do { x = .6 + R() * (xmax - 1.2); y = .6 + R() * (H - 1.2); } while (obstacles().some(v => rectDist(v, x, y) < .6) || !maskOK(x, y) || !maskOK(x + .5, y) || !maskOK(x - .5, y) || !maskOK(x, y + .5) || !maskOK(x, y - .5) || stairF[cellOf(x, y)] >= 1e9);
+    else if (S.floors) {
+      // 층별 비율대로 층을 먼저 고르고, 그 층 안에서 자리를 잡는다
+      const f = S.floors[R() < S.spawnW[0] ? 0 : 1];
+      do { x = f.x0 + .6 + R() * (f.x1 - f.x0 - 1.2); y = .6 + R() * (H - 1.2); } while (!maskOK(x, y) || !maskOK(x + .5, y) || !maskOK(x - .5, y) || !maskOK(x, y + .5) || !maskOK(x, y - .5) || stairF[cellOf(x, y)] >= 1e9);
+    }
+    else do {
+      if (false) {}
+      else x = .6 + R() * (xmax - 1.2);
+      y = .6 + R() * (H - 1.2);
+    } while (obstacles().some(v => rectDist(v, x, y) < .6) || !maskOK(x, y) || !maskOK(x + .5, y) || !maskOK(x - .5, y) || !maskOK(x, y + .5) || !maskOK(x, y - .5) || stairF[cellOf(x, y)] >= 1e9);
     list.push({ x, y, kind, rel, vx: 0, vy: 0, v0: KIND[kind].v * (.9 + .2 * R()), r: KIND[kind].r });
   }
   return list.sort((a, b) => b.rel - a.rel);
@@ -301,7 +343,10 @@ function startRun(keepCols) {
   }
   done = { adult: [], elder: [], aid: [], wheel: [], staff: [] };
   for (const e of S.elevs) e.next = 0;
-  noise = rng(7); reinsert = [];
+  noise = rng(7); reinsert = []; stairList = [];
+  floorLast = (S.floors || [0]).map(() => 0);
+  stairStat = (S.portals || []).map(p => { p.next = { up: 0, dn: 0 }; return { n: p.n, pass: 0, maxQ: 0 }; });
+  floorInit = (S.floors || [0]).map((f, i) => pending.filter(a => a.kind !== 'staff' && floorOf(a.x) === i).length);
   // 구역 지정: 조력 필요자와 직원을 x 순서로 나눠 직원마다 담당 구역을 준다
   helpers = pending.filter(a => KIND[a.kind].help).sort((p, q) => p.x - q.x);
   const staff = pending.filter(a => a.kind === 'staff').sort((p, q) => p.x - q.x);
@@ -334,6 +379,8 @@ function step() {
     for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
       const ax = cx + dx, ay = cy + dy;
       if (ax < 0 || ay < 0 || ax >= NX || ay >= NY) continue;
+      // 2칸 앞을 볼 때 중간 칸이 막혀 있으면(벽 모서리 너머) 건너뛴다
+      if ((Math.abs(dx) === 2 || Math.abs(dy) === 2) && (blocked[(cy + Math.trunc(dy / 2)) * NX + cx + Math.trunc(dx / 2)] || blocked[(cy + Math.round(dy / 2)) * NX + cx + Math.round(dx / 2)])) continue;
       const v = f[ay * NX + ax]; if (v < best) { best = v; bx = ax; by = ay; }
     }
     let dx = (bx + .5) * CS - a.x, dy = (by + .5) * CS - a.y;
@@ -367,8 +414,11 @@ function step() {
       if (ov > 0) { fn += K_BODY * ov; const tx = -ny, ty = nx, vt = a.vx * tx + a.vy * ty; fx -= K_FRIC * ov * vt * tx; fy -= K_FRIC * ov * vt * ty; }
       fx += fn * nx; fy += fn * ny;
     };
-    if (S.mask) for (let my = gy - 1; my <= gy + 1; my++) for (let mx = gx - 1; mx <= gx + 1; mx++)
-      if (!maskOK(mx + .5, my + .5)) wall(clamp(a.x, mx, mx + 1), clamp(a.y, my, my + 1), a.r);
+    if (S.mask) {
+      const mc = S.maskCS || 1, cx0 = Math.floor(a.x / mc), cy0 = Math.floor(a.y / mc), rr = Math.ceil(1 / mc);
+      for (let my = cy0 - rr; my <= cy0 + rr; my++) for (let mx = cx0 - rr; mx <= cx0 + rr; mx++)
+        if (!maskOK((mx + .5) * mc, (my + .5) * mc)) wall(clamp(a.x, mx * mc, (mx + 1) * mc), clamp(a.y, my * mc, (my + 1) * mc), a.r);
+    }
     const hx = a.x / 2 | 0, hy = a.y / 2 | 0, near = [];
     for (let oy = -1; oy <= 1; oy++) for (let ox = -1; ox <= 1; ox++) { const l = colHash.get((hx + ox) + ',' + (hy + oy)); if (l) near.push(...l); }
     for (const c of near) if (Math.abs(a.x - c.x) < 2 && Math.abs(a.y - c.y) < 2) {
@@ -400,10 +450,34 @@ function step() {
       const h = a.task; h.escort = a; h.v0 = KIND[h.kind].assist; a.inEscort = true; a.task = null; a.tf = null;
     }
   }
-  agents = agents.filter(a => !a.out && !a.inEscort);
+  // 계단: 계단 입구에 닿고 반대편이 목적지에 더 가까우면 계단에 들어간다 (폭 1m당 1.3명/s, 속도는 평지의 절반)
+  if (S.portals) {
+    S.portals.forEach((p, pi) => {
+      for (const side of ['up', 'dn']) {
+        const [px, py] = p[side], [ox, oy] = p[side === 'up' ? 'dn' : 'up'];
+        let q = 0;
+        for (const a of agents) {
+          if (a.out || a.inEscort || a.inStair) continue;
+          const d = Math.hypot(a.x - px, a.y - py);
+          if (d < p.r + 2) q++;
+          if (d > p.r) continue;
+          const f = a.kind === 'staff' && a.task ? a.tf : stairF;
+          if (!(f[cellOf(ox, oy)] < f[cellOf(a.x, a.y)] - 1) || t < p.next[side]) continue;
+          p.next[side] = t + 1 / (1.3 * p.w);
+          a.inStair = true; a.stairOut = t + p.len / Math.max(.2, (a.escort ? a.v0 : a.v0) * .5); a.ox = ox; a.oy = oy;
+          stairList.push(a); stairStat[pi].pass++;
+        }
+        stairStat[pi].maxQ = Math.max(stairStat[pi].maxQ, q);
+      }
+    });
+    for (const a of stairList) if (t >= a.stairOut) { a.inStair = false; a.x = a.ox + (noise() - .5); a.y = a.oy + (noise() - .5); a.vx = a.vy = 0; reinsert.push(a); }
+    stairList = stairList.filter(a => a.inStair);
+    for (const a of [...agents, ...stairList]) if (!a.out && !a.inEscort && a.kind !== 'staff') { const fi = floorOf(a.inStair ? a.ox : a.x); if (!a.inStair) floorLast[fi] = t; }
+  }
+  agents = agents.filter(a => !a.out && !a.inEscort && !a.inStair);
   if (reinsert.length) { agents.push(...reinsert); reinsert = []; }
   t += DT;
-  if ((!agents.length && !pending.length) || t > 900) finish();
+  if ((!agents.length && !pending.length && !stairList.length) || t > 900) finish();
 }
 function leave(a) {
   a.out = true; done[a.kind].push(t); outCount++;
@@ -435,7 +509,8 @@ function nearestTarget(a) {
 function summary() {
   const ped = [...done.adult, ...done.elder], help = [...done.aid, ...done.wheel];
   const mx = a => a.length ? Math.max(...a) : 0, avg = a => a.length ? a.reduce((s, v) => s + v, 0) / a.length : 0;
-  return { ped: mx(ped), elderAvg: avg(done.elder), helpAvg: avg(help), helpMax: mx(help), cut: t > 900 };
+  return { ped: mx(ped), elderAvg: avg(done.elder), helpAvg: avg(help), helpMax: mx(help), cut: t > 900,
+    floors: S.floors ? S.floors.map((f, i) => ({ n: f.n, init: floorInit[i], clear: floorLast[i] })) : null, stairs: stairStat.map(s => ({ ...s })) };
 }
 function finish() {
   running = false;
@@ -548,6 +623,7 @@ function hud() {
   $('hA').textContent = left.adult; $('hE').textContent = left.elder; $('hW').textContent = left.wait; $('hS').textContent = left.esc;
   const mx = density(), g = LOS.find(l => mx <= l[1]);
   $('hD').textContent = mx.toFixed(1); $('hL').textContent = 'LOS ' + g[0]; $('hL').style.color = g[2] || 'var(--mut)';
+  floorPanel();
 }
 
 // ---------- 그리기 ----------
@@ -572,6 +648,16 @@ function draw() {
   ctx.save(); ctx.translate(v.ox, v.oy);
   ctx.fillStyle = '#1e2227'; ctx.fillRect(0, 0, W * s, H * s);
   if (S.bg && S.bg.complete) { ctx.globalAlpha = .55; ctx.drawImage(S.bg, 0, 0, W * s, H * s); ctx.globalAlpha = 1; }
+  else if (S.mask) { ctx.fillStyle = '#0b0f0d'; ctx.fillRect(0, 0, W * s, H * s); ctx.imageSmoothingEnabled = false; ctx.drawImage(maskCanvas(), 0, 0, W * s, H * s); }
+  if (S.floors) {
+    ctx.fillStyle = '#e9efe9'; ctx.textAlign = 'left'; ctx.font = `${Math.max(12, Math.min(16, s * 2))}px sans-serif`;
+    S.floors.forEach(f => ctx.fillText(f.n, (f.x0 + 1) * s, -1.5 * s));
+  }
+  for (const p of S.portals || []) for (const side of ['up', 'dn']) {
+    const [x, y] = p[side];
+    ctx.fillStyle = '#5aa9ff'; ctx.globalAlpha = .75; ctx.fillRect((x - p.r) * s, (y - p.r) * s, p.r * 2 * s, p.r * 2 * s); ctx.globalAlpha = 1;
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.fillText((side === 'up' ? '↓ ' : '↑ ') + p.n, x * s, (y - p.r - 1.5) * s);
+  }
   if (viewMode === 1) {
     const gw = Math.ceil(W);
     ctx.globalAlpha = .55;
@@ -615,12 +701,95 @@ function draw() {
   }
   ctx.restore();
 }
+// 도면 마스크를 바닥 그림으로: 걸을 수 있는 곳만 밝게
+function maskCanvas() {
+  if (S.mc) return S.mc;
+  const c = S.maskCS || 1, mw = S.maskW || W, mh = Math.round(H / c), cv2 = document.createElement('canvas');
+  cv2.width = mw; cv2.height = mh;
+  const g = cv2.getContext('2d'), im = g.createImageData(mw, mh);
+  for (let i = 0; i < mw * mh; i++) if (S.mask[i]) { im.data[i * 4] = 38; im.data[i * 4 + 1] = 48; im.data[i * 4 + 2] = 44; im.data[i * 4 + 3] = 255; }
+  g.putImageData(im, 0, 0);
+  return S.mc = cv2;
+}
+// 층별 분석: 층마다 남은 인원·비움 시각, 계단마다 통과·대기
+function floorPanel() {
+  const box = $('floorBox');
+  if (!S.floors) { box.hidden = true; return; }
+  box.hidden = false;
+  const now = S.floors.map(() => 0);
+  for (const a of [...agents, ...pending]) if (a.kind !== 'staff') now[floorOf(a.x)]++;
+  for (const a of stairList) if (a.kind !== 'staff') now[floorOf(a.ox)]++;
+  const inStair = stairList.filter(a => a.kind !== 'staff').length;
+  box.innerHTML = '<b style="color:var(--tx)">층별 분석</b> · ' + S.floors.map((f, i) =>
+    `${f.n}: 시작 ${floorInit[i] || 0}명 → 남은 ${now[i]}명${now[i] === 0 && t > 0 ? ` (비움 ${floorLast[i].toFixed(0)}초)` : ''}`).join(' · ') +
+    ` · 계단 안 ${inStair}명 · ` + stairStat.map(s => `${s.n} 통과 ${s.pass} / 최대 대기 ${s.maxQ}`).join(' · ');
+}
+
+// ---------- 3D: 층을 쌓아 보여 준다 (드래그 = 회전, 휠 = 확대) ----------
+const v3 = { on: false, yaw: -.6, pitch: .75, dist: 1, drag: null };
+let R3 = null;
+function build3d() {
+  const cv3 = $('cv3'), w = cv3.clientWidth, h = 460;
+  if (!window.THREE) { $('floorBox').hidden = false; $('floorBox').textContent = '3D 라이브러리를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.'; return null; }
+  const renderer = new THREE.WebGLRenderer({ canvas: cv3, antialias: true });
+  renderer.setPixelRatio(devicePixelRatio || 1); renderer.setSize(w, h, false);
+  const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0e1311);
+  const cam = new THREE.PerspectiveCamera(40, w / h, .5, 3000);
+  scene.add(new THREE.AmbientLight(0xffffff, .75)); const dl = new THREE.DirectionalLight(0xffffff, .5); dl.position.set(1, 2, 1); scene.add(dl);
+  // 층고는 보기 좋게 과장(평면 폭의 12%), 계산은 계단 길이로 따로 한다
+  const floors = S.floors || [{ n: '', x0: 0, x1: W }], fw = Math.max(...floors.map(f => f.x1 - f.x0)), FH = Math.max(4.5, fw * .12);
+  const tex = new THREE.CanvasTexture(S.mask ? maskCanvas() : (() => { const c = document.createElement('canvas'); c.width = 2; c.height = 2; const g = c.getContext('2d'); g.fillStyle = '#263030'; g.fillRect(0, 0, 2, 2); return c; })());
+  tex.magFilter = THREE.NearestFilter;
+  floors.forEach((f, i) => {
+    const t2 = tex.clone(); t2.needsUpdate = true; t2.repeat.set((f.x1 - f.x0) / W, 1); t2.offset.set(f.x0 / W, 0);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(f.x1 - f.x0, H), new THREE.MeshBasicMaterial({ map: t2, transparent: true, opacity: .95, side: THREE.DoubleSide }));
+    m.rotation.x = -Math.PI / 2; m.position.set((f.x1 - f.x0) / 2 - fw / 2, i * FH, 0); scene.add(m);
+    const edge = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(f.x1 - f.x0, .05, H)), new THREE.LineBasicMaterial({ color: 0x3a4a43 }));
+    edge.position.copy(m.position); scene.add(edge);
+  });
+  for (const p of S.portals || []) {
+    const a = floorOf(p.dn[0]), b = floorOf(p.up[0]), fa = floors[a], fb = floors[b];
+    const pa = new THREE.Vector3(p.dn[0] - fa.x0 - fw / 2, a * FH, p.dn[1] - H / 2), pb = new THREE.Vector3(p.up[0] - fb.x0 - fw / 2, b * FH, p.up[1] - H / 2);
+    const g = new THREE.BufferGeometry().setFromPoints([pa, pb]); scene.add(new THREE.Line(g, new THREE.LineBasicMaterial({ color: 0x5aa9ff })));
+  }
+  const colGeo = new THREE.BoxGeometry(1, 3.2, 1), colMat = new THREE.MeshLambertMaterial({ color: 0xd8ddd6 });
+  for (const c of cols) { const m = new THREE.Mesh(colGeo, colMat); const fi = floorOf(c.x); m.scale.set(+$('cs').value, 1, +$('cs').value); m.position.set(c.x - floors[fi].x0 - fw / 2, fi * FH + 1.6, c.y - H / 2); scene.add(m); }
+  for (const e of S.exits) { const fi = floorOf(e.cx), m = new THREE.Mesh(new THREE.BoxGeometry(1.4, .3, 1.4), new THREE.MeshBasicMaterial({ color: e.closed ? 0xff4d4d : 0xffd84d })); m.position.set(e.cx - floors[fi].x0 - fw / 2, fi * FH + .15, e.cy - H / 2); scene.add(m); }
+  const MAXA = 4000, inst = new THREE.InstancedMesh(new THREE.SphereGeometry(.32, 8, 6), new THREE.MeshLambertMaterial(), MAXA);
+  inst.instanceMatrix.setUsage(THREE.DynamicDrawUsage); scene.add(inst);
+  return { renderer, scene, cam, inst, floors, FH, fw, MAXA, span: Math.max(fw, H, floors.length * FH * 3) };
+}
+const _m4 = window.THREE ? new THREE.Matrix4() : null, _c = window.THREE ? new THREE.Color() : null;
+function draw3d() {
+  if (!v3.on || !R3) return;
+  const { renderer, scene, cam, inst, floors, FH, fw, MAXA, span } = R3;
+  let n = 0;
+  for (const a of agents) {
+    if (n >= MAXA) break;
+    const fi = floorOf(a.x), f = floors[fi] || floors[0];
+    _m4.makeTranslation(a.x - f.x0 - fw / 2, fi * FH + .35, a.y - H / 2); inst.setMatrixAt(n, _m4);
+    _c.set(KIND[a.kind].c); if (KIND[a.kind].help && a.escort) _c.set('#4cd07d'); inst.setColorAt(n, _c); n++;
+  }
+  inst.count = n; inst.instanceMatrix.needsUpdate = true; if (inst.instanceColor) inst.instanceColor.needsUpdate = true;
+  const r = span * 1.15 * v3.dist, cy = (floors.length - 1) * FH / 2;
+  cam.position.set(r * Math.cos(v3.pitch) * Math.sin(v3.yaw), cy + r * Math.sin(v3.pitch), r * Math.cos(v3.pitch) * Math.cos(v3.yaw));
+  cam.lookAt(0, cy, 0);
+  renderer.render(scene, cam);
+}
+$('b3d').onclick = () => {
+  v3.on = !v3.on; $('cv3').hidden = !v3.on; $('b3d').classList.toggle('on', v3.on);
+  if (v3.on) { if (R3) R3.renderer.dispose(); R3 = build3d(); }
+};
+$('cv3').onpointerdown = e => { v3.drag = [e.clientX, e.clientY]; $('cv3').setPointerCapture(e.pointerId); };
+$('cv3').onpointermove = e => { if (!v3.drag) return; v3.yaw -= (e.clientX - v3.drag[0]) * .005; v3.pitch = clamp(v3.pitch + (e.clientY - v3.drag[1]) * .004, .1, 1.45); v3.drag = [e.clientX, e.clientY]; };
+$('cv3').onpointerup = () => v3.drag = null;
+$('cv3').onwheel = e => { e.preventDefault(); v3.dist = clamp(v3.dist * (e.deltaY > 0 ? 1.1 : .9), .25, 2.5); };
 
 loadSite('b3f'); syncButtons();
 (function loop() {
   const t0 = performance.now(), steps = +$('ts').value * 2.5;
   if (running) for (let i = 0; i < steps && running && performance.now() - t0 < 40; i++) step();
-  hud(); draw();
+  hud(); draw(); draw3d();
   requestAnimationFrame(loop);
 })();
 </script>

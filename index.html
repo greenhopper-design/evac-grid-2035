@@ -113,7 +113,7 @@ footer{font-size:13px;color:var(--mut);border-top:1px solid var(--line);padding-
 </div></div>
 
 <div class="view" id="v-script"><div class="script">
-  <div class="timer"><span class="t" id="tm">0:00</span><span id="cueN" style="color:var(--mut);font-size:14px">1 / 8</span>
+  <div class="timer"><span class="t" id="tm">0:00</span><span id="cueN" style="color:var(--mut);font-size:14px">1 / 9</span>
     <span style="display:flex;gap:6px"><button id="tStart">시작</button><button id="tReset">리셋</button></span></div>
   <p style="font-size:14px;color:var(--mut)">1분 라이트닝 데모용. 카드를 누르면 다음으로 넘어가요. 오른쪽 숫자는 그 슬라이드를 시작할 시각이에요.</p>
   <div id="cues"></div>
@@ -132,6 +132,10 @@ footer{font-size:13px;color:var(--mut);border-top:1px solid var(--line);padding-
     <span class="chip">③ 어떤 지능으로 · <b>에이전트 시뮬레이션</b></span>
   </div>
   <div class="cta"><a class="primary" href="#sim">시뮬레이터 실행</a><a href="#slides">발표 슬라이드</a><a href="#script">핸드폰 대본</a></div>
+  <div style="display:flex;gap:14px;align-items:center;margin-top:20px">
+    <div id="qr" style="background:#fff;padding:8px;border-radius:8px;width:136px;height:136px" aria-label="핸드폰 대본 QR 코드"></div>
+    <p class="sub">핸드폰 카메라로 찍으면<br>1분 발표 대본이 열립니다.</p>
+  </div>
 </header>
 
 <section>
@@ -163,6 +167,7 @@ footer{font-size:13px;color:var(--mut);border-top:1px solid var(--line);padding-
       <p>· 출구 실험실 20×14m (출구 1.2m)</p>
       <p>· 2호선 삼성역 대합실 96×28m (서울교통공사 구내도 기반)</p>
       <p>· 영동대로 B3F 통합대합실 140×40m (서울시 층별 배치도 기반)</p>
+      <p>· 서울시 신청사 1F 로비 + 2F 사무층, 코어 계단 2곳 (공개 실제 평면에서 추출, 3D)</p>
       <p style="margin-top:8px"><b style="color:var(--fg)">비교</b></p>
       <p>· 기둥: A 정방형, B 엇갈림, C 넓은 스팬, D 출구 앞 기둥, E 흐름 반응(6회 반복)</p>
       <p>· 직원: S1 무작위, S2 우선순위, S3 구역 지정, S4 구역+우선순위</p>
@@ -213,11 +218,30 @@ footer{font-size:13px;color:var(--mut);border-top:1px solid var(--line);padding-
 </section>
 
 <section>
+  <div class="eyebrow">결과 3 · 실제 도면 층별 분석 (서울시 신청사 1F·2F)</div>
+  <h2>실제 도면에서도 구역 지정이 가장 크고, 병목은 한쪽 계단에 몰렸다</h2>
+  <p class="sub">ArchDaily에 공개된 서울시 신청사(iArc) 지상1층·2층 평면(1/250)에서 벽·코어·기둥을 그대로 추출해, 2F 사무층 사람은 코어 계단 2곳으로 1F 로비에 내려오고 출구 4곳으로 나가게 했다. 축척은 X3~X16 치수 106.5m 기준. 2035 구성, 600명(1F 65%·2F 35%), 직원 8명. 시뮬레이터에서 3D로 층을 쌓아 볼 수 있다.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>조건</th><th>보행자 전원</th><th>조력 평균</th><th>2F 비움</th><th>1F 비움</th><th>계단 1 통과/최대 대기</th><th>계단 2 통과/최대 대기</th></tr></thead>
+    <tbody>
+      <tr><td>2035 · S1 무작위</td><td>138.6</td><td>199.9</td><td>320.1</td><td>364.3</td><td>89 / 45</td><td>146 / 85</td></tr>
+      <tr><td>2035 · S2 우선순위</td><td>139.5</td><td>172.2 <span class="good">−14%</span></td><td>276.0</td><td>376.2</td><td>89 / 45</td><td>146 / 86</td></tr>
+      <tr><td>2035 · S3 구역 지정</td><td>138.9</td><td>139.4 <span class="good">−30%</span></td><td>245.6 <span class="good">−23%</span></td><td>346.8</td><td>89 / 43</td><td>144 / 87</td></tr>
+      <tr><td>2035 · S4 구역+우선순위</td><td>137.9</td><td>131.6 <span class="good">−34%</span></td><td>299.3</td><td>399.2</td><td>90 / 44</td><td>143 / 87</td></tr>
+      <tr><td>2026 · S3</td><td>112.0</td><td>88.1</td><td>202.4</td><td>302.6</td><td>56 / 17</td><td>95 / 59</td></tr>
+      <tr><td>2035 · S3 · 주출입구 폐쇄</td><td>129.1</td><td>173.1 <span class="bad">+24%</span></td><td>276.0</td><td>390.3</td><td>125 / 64</td><td>108 / 75</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">계단 2가 계단 1보다 1.6배 많은 사람을 받고 최대 대기도 2배(85명 vs 45명)였다. 2F 사람 대부분이 가까운 계단 2로 몰리기 때문이다. 2026 → 2035에 조력 평균은 1.6배, 2F 비움 시간은 202초 → 246초로 늘었다. 초 단위, 수치는 비교용.</p>
+</section>
+
+<section>
   <div class="eyebrow">발견</div>
   <div class="finding"><div class="k">1</div><p>대형 지하공간에서 기둥 배치는 걷는 사람의 피난 시간을 거의 바꾸지 못한다. 병목은 출구와 계단 폭이 만든다.</p></div>
   <div class="finding"><div class="k">2</div><p>2035년의 진짜 병목은 혼자 나갈 수 없는 사람이다. 같은 공간에서 조력 대상의 평균 피난 시간이 2.4배가 된다.</p></div>
   <div class="finding"><div class="k">3</div><p>그 시간을 줄이는 가장 큰 변수는 직원이 누구를 맡느냐다. 구역을 나눠 맡기면 41~56% 줄고, 넓을수록 효과가 크다.</p></div>
   <div class="finding"><div class="k">4</div><p>출구 앞 기둥은 좁고 붐비는 출구에서만 도움이 된다(−6%). 넓은 출구 앞에서는 효과가 없거나 방해가 된다.</p></div>
+  <div class="finding"><div class="k">5</div><p>여러 층에서는 사람들이 가까운 계단 하나로 몰린다. 서울시청 2F에서 계단 2의 대기가 계단 1의 2배였다. 층마다 어느 구역이 어느 계단을 쓸지 정해야 한다.</p></div>
 </section>
 
 <section>
@@ -228,7 +252,7 @@ footer{font-size:13px;color:var(--mut);border-top:1px solid var(--line);padding-
       <li><b>기둥 3×2칸을 직원 1명의 담당 구역으로 묶는다</b>기둥에 구역 번호와 색을 넣고 바닥에 구역 경계 띠를 깐다. 직원은 화재 때 자기 구역만 맡는다(S3). 시뮬레이션에서 조력 대상 평균 피난 시간을 41~56% 줄인 조건이다.</li>
       <li><b>구역마다 출구 가까운 칸 하나를 조력 대기 포켓으로 비운다</b>휠체어·보행보조기 사용자가 기다릴 자리를 정해 직원이 찾는 시간을 없앤다. Lim 외(2023)는 휠체어 사용자를 출구 가까이 두라고 권한다. 이 항목은 아직 시뮬레이션으로 검증하지 않았다.</li>
       <li><b>출구 앞 흐름 분리 기둥은 폭 1.5m 이하 좁은 출구에만 둔다</b>문에서 1.7m 앞. 좁은 출구 실험에서만 6% 효과가 있었고, 3m 이상 출구에서는 효과가 없었다.</li>
-      <li><b>구역 경계는 승강장 계단과 출구 위치에 맞춰 긋는다</b>각 구역이 출구 하나 이상과 계단 하나를 갖도록 기둥 열을 정렬한다.</li>
+      <li><b>구역 경계는 계단과 출구 위치에 맞춰 긋고, 구역마다 쓸 계단을 정한다</b>각 구역이 계단 하나와 출구 하나 이상을 갖도록 기둥 열을 정렬한다. 서울시청 2F처럼 한 계단에 대기가 2배로 몰리는 일을 막는다. 계단 배정 효과는 다음 단계에서 검증한다.</li>
     </ol>
     <div>
       <canvas id="dia" width="560" height="300" aria-label="조력 구역 그리드 개념도"></canvas>
@@ -239,14 +263,15 @@ footer{font-size:13px;color:var(--mut);border-top:1px solid var(--line);padding-
 
 <section>
   <div class="eyebrow">한계와 다음 단계</div>
-  <p class="sub">· 평면은 구내도와 층별 배치도를 비율로 따라 그린 개략 평면이고, 치수는 추정이다. 벽·기둥이 그려진 실측 도면(예: ArchDaily의 서울시 신청사 평면)으로 다시 검증한다.</p>
+  <p class="sub">· 삼성역·B3F 평면은 구내도와 층별 배치도를 비율로 따라 그린 개략 평면이다. 서울시청은 공개 평면에서 추출했지만 해상도(약 0.21m/px) 때문에 가구와 기둥이 함께 장애물로 들어갔고, 그래서 이 사례에서는 기둥 유형을 바꿔 보지 않았다.</p>
+  <p class="sub">· 구역별 계단 배정(제안 4)을 시뮬레이션에 넣어 계단 편중이 줄어드는지 확인한다.</p>
   <p class="sub">· 수치는 가정값으로 돌린 유형 비교용이며 RSET 산정값이 아니다. 같은 평면을 Pathfinder로 돌려 교차 검증한다.</p>
   <p class="sub">· 조력 대기 포켓(제안 2)은 시뮬레이션에 넣어 효과를 확인한다.</p>
   <p class="sub">· 이용자 비율과 직원 수는 가정값이다. 실제 이용 통계로 바꾼다.</p>
 </section>
 
 <footer>
-  참고: Helbing, Farkas, Vicsek (2000) Nature 407 · Lim, Lee, Hwang (2023) Buildings 13(2):400 · 서울교통공사 삼성역 구내도(내 손안에 서울, 2025.05) · 서울균형발전포털 영동대로 층별 배치계획 · 통계청 「2025 고령자 통계」 · Fruin 보행 서비스 수준.<br>
+  참고: Helbing, Farkas, Vicsek (2000) Nature 407 · Lim, Lee, Hwang (2023) Buildings 13(2):400 · 서울교통공사 삼성역 구내도(내 손안에 서울, 2025.05) · 서울균형발전포털 영동대로 층별 배치계획 · 서울시 신청사 지상1·2층 평면도(iArc, ArchDaily 게재; 이 사이트에는 원본 이미지 대신 추출한 보행 영역만 담음) · 통계청 「2025 고령자 통계」 · Fruin 보행 서비스 수준.<br>
   AI 활용: Claude와 함께 제작. 장소·카드 해석·직원 시나리오 채택·설계 제안 선택은 작성자가 정함.
 </footer>
 </div>
@@ -269,12 +294,13 @@ document.getElementById('fs').onclick = () => { const f = document.getElementByI
 const CUES = [
   [0, '표지', '제 카드는 기둥 그리드, 사람의 흐름, 에이전트 시뮬레이션입니다. 결론부터 말하면, 2035년 지하 피난의 병목은 기둥이 아니라 도움이 필요한 사람이었습니다.'],
   [9, '문제', '2035년 영동대로 지하에는 노선 다섯 개가 모이고, 노년부양비는 47.7까지 올라갑니다.'],
-  [15, '방법', 'Helbing 사회력 모델과 요양원 직원 조력 논문 값을 웹에 구현해서, 기둥 다섯 유형과 직원 행동 네 가지를 비교했습니다.'],
-  [23, '결과 1', '그런데 기둥을 바꿔도 피난 시간은 거의 그대로였습니다. 좁은 출구에서만 최대 9퍼센트.'],
-  [30, '결과 2', '대신 2035년에는 휠체어·보행보조기 사용자의 피난 시간이 2.4배로 늘었습니다.'],
-  [36, '결과 3', '직원이 구역을 나눠 맡으면 이 시간이 41에서 56퍼센트 줄었습니다.', '시뮬레이터로 S1 → S3 장면을 보여 줄 수 있으면 여기서'],
-  [43, '설계 제안', '그래서 조력 구역 그리드를 제안합니다. 기둥 3×2칸을 직원 한 명의 담당 구역으로 묶고, 출구 옆에 조력 대기 포켓을 둡니다.'],
-  [53, '정리', '기둥은 흐름을 막는 물체가 아니라, 누가 누구를 도울지 정하는 틀이 됩니다. 감사합니다.'],
+  [15, '방법', 'Helbing 사회력 모델과 요양원 직원 조력 논문 값을 웹에 구현해서, 지하철역 두 곳과 서울시청 실제 도면에서 비교했습니다.'],
+  [22, '결과 1', '기둥을 바꿔도 피난 시간은 거의 그대로였습니다.'],
+  [27, '결과 2', '대신 2035년에는 휠체어·보행보조기 사용자의 피난 시간이 2.4배로 늘었습니다.'],
+  [33, '결과 3', '직원이 구역을 나눠 맡으면 이 시간이 41에서 56퍼센트 줄었습니다.', '시뮬레이터로 S1 → S3 장면을 보여 줄 수 있으면 여기서'],
+  [39, '결과 4', '서울시청 실제 도면에서는 사람들이 한 계단에 몰려 대기가 두 배였습니다.', '3D 보기로 두 층을 보여 줄 수 있으면 여기서'],
+  [45, '설계 제안', '그래서 조력 구역 그리드를 제안합니다. 기둥 3×2칸을 직원 한 명의 구역으로 묶고, 구역마다 대기 포켓과 쓸 계단을 정합니다.'],
+  [55, '정리', '기둥은 흐름을 막는 물체가 아니라, 누가 누구를 도울지 정하는 틀입니다. 감사합니다.'],
 ];
 const fmtT = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 let cur = 0, t0 = null, tick = null;
@@ -296,6 +322,10 @@ function start() {
 document.getElementById('tStart').onclick = start;
 document.getElementById('tReset').onclick = () => { clearInterval(tick); tick = null; t0 = null; document.getElementById('tm').textContent = '0:00'; document.getElementById('tm').classList.remove('over'); setCue(0); };
 setCue(0); route();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+if (window.QRCode) new QRCode(document.getElementById('qr'), { text: location.origin + location.pathname.replace(/index\.html$/, '') + '#script', width: 120, height: 120, correctLevel: QRCode.CorrectLevel.M });
 </script>
 <script>
 const bars = (id, rows, max, goodFn) => {

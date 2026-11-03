@@ -131,12 +131,31 @@ a{color:var(--exit)}
 </section>
 
 <section class="slide">
+  <div class="eb">결과 4 · 실제 도면 층별 분석</div>
+  <h2>서울시청 1F·2F: 한쪽 계단에 대기가 <em style="color:var(--warn)">2배</em> 몰렸다</h2>
+  <div class="row">
+    <div>
+      <p class="small">2035 · 직원 구역 지정 · 계단별 최대 대기 (명)</p>
+      <div id="b4"></div>
+      <p class="small" style="margin-top:14px">조력 평균: 무작위 199.9초 → 구역 지정 139.4초 (−30%)<br>2F 비움: 320초 → 246초 (−23%)</p>
+    </div>
+    <ul>
+      <li>공개 평면(1/250)에서 벽·코어 추출, 축척 106.5m 치수 기준</li>
+      <li>2F 사람은 코어 계단 2곳 → 1F 로비 → 출구 4곳</li>
+      <li>사람들은 가까운 계단 하나로 몰린다</li>
+      <li>시뮬레이터에서 3D로 층을 쌓아 확인</li>
+    </ul>
+  </div>
+</section>
+
+<section class="slide">
   <div class="eb">설계 제안</div>
   <h2>조력 구역 그리드</h2>
   <div class="row" style="grid-template-columns:1.05fr 1fr">
     <div class="prop">
       <div><b>기둥 3×2칸 = 직원 1명 담당 구역</b><span>기둥 번호·색, 바닥 경계 띠 → 구역 지정(−41~56%)을 공간이 만든다</span></div>
       <div><b>구역마다 출구 옆 조력 대기 포켓</b><span>휠체어·보조기 사용자가 기다릴 자리를 정한다 (다음 단계 검증)</span></div>
+      <div><b>구역마다 쓸 계단을 정한다</b><span>한 계단에 대기 2배가 몰리는 일을 막는다 (다음 단계 검증)</span></div>
       <div><b>출구 앞 기둥은 좁은 출구에만</b><span>1.5m 이하 출구, 문에서 1.7m 앞 (−6%)</span></div>
     </div>
     <canvas id="dia" width="560" height="300"></canvas>
@@ -148,9 +167,12 @@ a{color:var(--exit)}
   <h2>기둥은 흐름을 막는 물체가 아니라<br><em>누가 누구를 도울지 정하는 틀</em>이 된다</h2>
   <ul style="margin-top:12px">
     <li>한계: 개략 평면·추정 치수·가정 비율, RSET 아님</li>
-    <li>다음: 실측 도면(서울시 신청사 등)으로 재검증, Pathfinder 교차 검증, 대기 포켓 시뮬레이션</li>
+    <li>다음: 구역별 계단 배정·대기 포켓 시뮬레이션, Pathfinder 교차 검증, 더 높은 해상도 도면</li>
   </ul>
-  <p class="small" style="margin-top:auto">시뮬레이터·결과: <span id="url"></span></p>
+  <div style="margin-top:auto;display:flex;gap:20px;align-items:center">
+    <div id="qr" style="background:#fff;padding:10px;border-radius:10px;width:160px;height:160px"></div>
+    <p class="small">시뮬레이터·결과·대본<br><span id="url"></span></p>
+  </div>
 </section>
 
 </div>
@@ -174,6 +196,8 @@ const bars = (id, rows, max) => document.getElementById(id).innerHTML = rows.map
 bars('b1', [['A 정방형', 38.9], ['B 엇갈림', 38.4], ['C 넓은 스팬', 36.4, 'g'], ['D 출구 앞', 36.6, 'g'], ['E 흐름 반응', 35.3, 'g']], 45);
 bars('b2', [['삼성역 2026', 38.4], ['삼성역 2035', 92.2, 'b'], ['B3F 2026', 47.1], ['B3F 2035', 113.8, 'b']], 130);
 bars('b3', [['삼성역 무작위', 155.9, 'b'], ['삼성역 구역 지정', 92.2, 'g'], ['B3F 무작위', 252.3, 'b'], ['B3F 구역 지정', 113.8, 'g']], 270);
+bars('b4', [['코어 계단 1', 43], ['코어 계단 2', 87, 'b']], 100);
+document.getElementById('url').textContent = location.href.replace(/slides\.html.*$/, '');
 
 const c = document.getElementById('dia').getContext('2d'), cols = 9, rows = 4, ox = 40, oy = 40, bay = 60;
 const zc = ['#2b4a3a', '#2a3e52', '#4a3d2a', '#3f2c48'];
@@ -187,5 +211,7 @@ c.strokeStyle = '#8a9a92'; c.lineWidth = 2; c.strokeRect(ox - 10, oy - 10, (cols
 c.fillStyle = '#e9efe9'; for (let j = 0; j < rows; j++) for (let k = 0; k < cols; k++) c.fillRect(ox + k * bay - 4, oy + j * bay - 4, 8, 8);
 c.font = '14px "IBM Plex Sans KR", sans-serif'; ['구역 1', '구역 2', '구역 3', '구역 4'].forEach((t, k) => c.fillText(t, ox + k * 2 * bay + 34, oy + (rows - 1) * bay + 40));
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>if (window.QRCode) new QRCode(document.getElementById('qr'), { text: location.href.replace(/slides\.html.*$/, ''), width: 140, height: 140, correctLevel: QRCode.CorrectLevel.M });</script>
 </body>
 </html>

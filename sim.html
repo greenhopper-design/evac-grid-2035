@@ -1,0 +1,628 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>2035 기둥 그리드 피난 시뮬레이터</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:dark;--bg:#0e1311;--panel:#151c19;--line:#24302b;--tx:#e9efe9;--mut:#8a9a92;--blue:#5aa9ff;--ora:#ff9f43;--grn:#4cd07d;--pink:#f472b6;--red:#ff6b6b}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif}
+.wrap{padding-block:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:12px;max-width:1500px;margin:auto}
+h1{font-size:22px;margin:0;letter-spacing:-.01em}
+.sub{color:var(--mut);font-size:13px}
+.stmt{font-size:15px;line-height:1.6}
+.stmt .b{color:var(--blue)}.stmt .o{color:var(--ora)}.stmt .g{color:var(--grn)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
+.card h2{font-size:13px;color:var(--mut);margin:0 0 8px;font-weight:600}
+canvas{display:block;width:100%;cursor:crosshair}
+.hud{display:flex;gap:18px;flex-wrap:wrap;font-size:14px;margin-top:8px;font-variant-numeric:tabular-nums}
+.hud b{font-size:20px}
+.row{display:grid;grid-template-columns:1.1fr 1fr 1.3fr;gap:12px}.row>*{min-width:0}.card table{display:block;overflow-x:auto}
+@media(max-width:1000px){.row{grid-template-columns:1fr}}
+.btns{display:flex;flex-wrap:wrap;gap:6px}
+button{background:#2a2f36;color:var(--tx);border:1px solid #3a4048;border-radius:8px;padding:7px 11px;font:inherit;font-size:13px;cursor:pointer}
+button:hover{background:#343a42}
+button.on{background:var(--grn);color:#0b1a10;border-color:var(--grn)}
+button.go{background:var(--blue);color:#06121f;border-color:var(--blue);font-weight:700}
+label{display:grid;grid-template-columns:120px 1fr 56px;align-items:center;gap:8px;font-size:13px;margin:5px 0}
+label span:last-child{text-align:right;color:var(--mut)}
+input[type=range]{width:100%}
+.mix{display:grid;grid-template-columns:70px repeat(3,1fr);gap:6px;font-size:13px;align-items:center;margin-top:6px}
+.mix input{width:100%;background:#22262c;color:var(--tx);border:1px solid #3a4048;border-radius:6px;padding:4px}
+table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+th,td{padding:5px 4px;border-bottom:1px solid var(--line);text-align:right}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--mut);font-weight:600}
+tr.cur td{background:#23303a}
+.better{color:var(--grn)}.worse{color:var(--red)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--mut);margin-top:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:-1px}
+.note{font-size:11.5px;color:var(--mut);line-height:1.6}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap"><h1>2035 서울 · 기둥 그리드 피난 시뮬레이션</h1><nav style="font-size:13px;display:flex;gap:14px"><a href="index.html" style="color:var(--grn)">결과와 설계 제안</a><a href="slides.html" style="color:var(--grn)">발표 슬라이드</a></nav></div>
+    <div class="sub" id="siteNote"></div>
+  </div>
+  <div class="card stmt">나는 <span class="b">「기둥 그리드」</span>를 <span class="o">「사람의 흐름」</span>에 반응하게 <span class="g">「에이전트 시뮬레이션」</span>으로 설계한다.
+  내 시제품은 <b>2035년 노인 이용객이 늘어난 영동대로 지하공간에서, 기둥 배치 유형에 따라 피난 흐름과 병목이 어떻게 달라지는지</b>를 보여 준다.</div>
+
+  <div class="card">
+    <div class="btns" id="sites" style="margin-bottom:8px"></div>
+    <canvas id="cv"></canvas>
+    <div class="hud">
+      <span>시나리오 <b id="hScen">-</b></span>
+      <span>기둥 <b id="hType">-</b></span>
+      <span>경과 <b id="hT">0.0</b>s</span>
+      <span>탈출 <b id="hOut">0</b></span>
+      <span>남은 성인 <b id="hA" style="color:var(--blue)">0</b> · 노인 <b id="hE" style="color:var(--ora)">0</b> · 조력 대기 <b id="hW" style="color:var(--pink)">0</b> · 조력 중 <b id="hS" style="color:var(--grn)">0</b></span>
+      <span>최대 밀도 <b id="hD">0</b>명/㎡ <b id="hL"></b></span>
+      <span id="hRound"></span>
+    </div>
+    <div class="legend" id="los"></div>
+    <div class="legend">
+      <span><i style="background:var(--blue)"></i>성인</span><span><i style="background:var(--ora)"></i>노인(자가보행)</span><span><i style="background:#c084fc"></i>보행보조기</span><span><i style="background:var(--pink)"></i>휠체어</span><span><i style="background:#4cd07d"></i>직원(조력자)</span>
+      <span>흰 테두리 = 조력 대기 · 초록 테두리 = 직원과 함께 이동 · 화재 시 엘리베이터 사용 안 함</span>
+      <span>□ 기둥 · 초록선 = 흐름 반응 이동 · 노랑 = 출구 · 회색 = 아래층에서 올라오는 계단 · 진회색 = 실·벽</span>
+      <span><b>출구 클릭 = 화재로 폐쇄/개방</b> · 그 외 클릭 = 확대/복귀</span>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="card">
+      <h2>1. 시나리오 · 이용자 구성 (%)</h2>
+      <div class="btns"><button id="s2026">현재 2026</button><button id="s2035" class="on">미래 2035</button></div>
+      <div class="mix" style="grid-template-columns:50px repeat(4,1fr)"><span></span><span>노인</span><span>보조기</span><span>휠체어</span><span>인원</span>
+        <span>2026</span><input id="e2026" type="number" value="12" min="0" max="80"><input id="b2026" type="number" value="1" min="0" max="20"><input id="w2026" type="number" value="1" min="0" max="20"><input id="n2026" type="number" min="20" max="3000" step="10">
+        <span>2035</span><input id="e2035" type="number" value="22" min="0" max="80"><input id="b2035" type="number" value="3" min="0" max="20"><input id="w2035" type="number" value="2" min="0" max="20"><input id="n2035" type="number" min="20" max="3000" step="10">
+      </div>
+      <label style="margin-top:8px">직원(조력자) 수<input id="nst" type="range" min="0" max="30" step="1"><span id="nstv"></span></label>
+      <div class="btns" id="staffSc"></div>
+      <label>긴급도(서두름)<input id="pn" type="range" min="1" max="2" step="0.1" value="1.5"><span id="pnv"></span></label>
+      <div class="note">사람 유형·속도는 Lim·Lee·Hwang(2023, Buildings 13(2):400) 표 1·2 값: 자가보행 노인 0.9 m/s·어깨 37.9cm, 보행보조기 0.5 m/s(조력 시 0.57)·55cm, 휠체어 0.83 m/s(직원이 밀 때 1.5)·70cm, 직원 1.3 m/s. 보행보조기·휠체어는 그 자리에서 직원을 기다리고, 직원이 데리고 가장 가까운 출구로 나간 뒤 다시 들어와 다음 사람을 찾는다(논문 그림 3). 성인 1.2 m/s, 비율·인원은 가정값.</div>
+    </div>
+    <div class="card">
+      <h2>2. 기둥 그리드 유형</h2>
+      <div class="btns" id="types"></div>
+      <label>기본 간격<input id="sp" type="range" min="2" max="12" step="0.5"><span id="spv"></span></label>
+      <label>기둥 크기<input id="cs" type="range" min="0.4" max="1.2" step="0.1"><span id="csv"></span></label>
+      <label>최대 이동(E)<input id="mo" type="range" min="0.5" max="3" step="0.5" value="1.5"><span id="mov"></span></label>
+      <label>재생 속도<input id="ts" type="range" min="1" max="40" step="1" value="10"><span id="tsv"></span></label>
+      <div class="btns" style="margin-top:6px">
+        <button id="run" class="go">▶ 이 유형 피난</button>
+        <button id="all">전체 비교 A→E</button>
+        <button id="heat" class="on">실시간 밀도</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>3. 결과 (초, A 대비) · <span id="tSite"></span></h2>
+      <table>
+        <thead><tr><th>기둥 유형</th><th>2026 보행자 전원</th><th>2035 보행자 전원</th><th>2035 조력 평균</th><th>2035 조력 마지막</th></tr></thead>
+        <tbody id="tb"></tbody>
+      </table>
+      <h2 style="margin-top:12px">직원 행동 시나리오 (2035, 현재 기둥 유형) · 논문 표 3</h2>
+      <table>
+        <thead><tr><th>시나리오</th><th>대상 지정</th><th>우선순위</th><th>조력 평균</th><th>조력 마지막</th></tr></thead>
+        <tbody id="tb2"></tbody>
+      </table>
+      <div class="btns" style="margin-top:6px"><button id="allS">직원 시나리오 비교 S1→S4</button></div>
+      <div class="note" style="margin-top:6px">보행자 = 성인+자가보행 노인. 조력 = 보행보조기+휠체어(직원과 함께 대피). 결과는 장소·폐쇄 출구·직원 수 조건마다 따로 기록. 수치는 유형 비교용이며 RSET 산정값이 아님.</div>
+    </div>
+  </div>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+// ---------- 장소 (m). 위 = 북쪽. solids = 실·벽, voids = 아래층에서 올라오는 계단(출발점) ----------
+const SITES = {
+  lab: {
+    name: '0. 출구 실험실', W: 20, H: 14, sp: 3, cs: .6, n: [100, 140], st: 2, fromVoid: 0,
+    note: '영상 레퍼런스(Pedro Rosso)와 같은 단일 출구 방. 기둥 배치만 바꿨을 때의 차이를 확대해서 보는 실험 장면',
+    exits: [{ n: '출구', side: 'E', p: 7, w: 1.2 }], elevs: [], voids: [], solids: [],
+  },
+  samseong: {
+    name: '1. 2호선 삼성역 대합실', W: 96, H: 28, sp: 8, cs: .8, n: [500, 900], st: 6, fromVoid: .4,
+    note: '서울교통공사 삼성역 구내도 기반 단순화 (B1 대합실, 출구 1~8, 승강장 계단 2곳 · 엘리베이터 1대는 화재 시 사용 안 함) · 치수는 구내도 비율 추정',
+    exits: [{ n: '1', side: 'S', p: 6 }, { n: '2', side: 'W', p: 8 }, { n: '3', side: 'N', p: 24 }, { n: '4', side: 'N', p: 40 },
+      { n: '8', side: 'S', p: 46 }, { n: '7', side: 'S', p: 68 }, { n: '5', side: 'N', p: 80 }, { n: '6', side: 'E', p: 14 }].map(e => ({ ...e, w: 3 })),
+    elevs: [],
+    voids: [{ x0: 29, y0: 11, x1: 36, y1: 17, t: '승강장 계단' }, { x0: 60, y0: 11, x1: 67, y1: 17, t: '승강장 계단' }],
+    solids: [{ x0: 44, y0: 22, x1: 52, y1: 28, t: '역무실' }, { x0: 12, y0: 0, x1: 18, y1: 5, t: '화장실' }],
+  },
+  b3f: {
+    name: '2. 영동대로 B3F 통합대합실', W: 140, H: 40, sp: 9, cs: 1, n: [1000, 1600], st: 10, fromVoid: .5,
+    note: '서울시 영동대로 지하공간 복합개발 층별 배치도의 B3F 통합대합실을 따라 그린 개략 평면 · GTX(B4F) 계단에서 올라와 B2F 계단·익스체인지 플랫폼·주차장 방화문으로 대피 · 치수·위치 추정',
+    exits: [{ n: 'N1', side: 'N', p: 18 }, { n: 'N2', side: 'N', p: 48 }, { n: 'X1', side: 'N', p: 78, w: 6 }, { n: 'N3', side: 'N', p: 108 }, { n: 'N4', side: 'N', p: 132 },
+      { n: 'S1', side: 'S', p: 66 }, { n: 'X2', side: 'S', p: 100, w: 6 }, { n: 'S2', side: 'S', p: 128 },
+      { n: 'P1', side: 'W', p: 10, w: 2 }, { n: 'P2', side: 'W', p: 30, w: 2 }].map(e => ({ w: 4, ...e })),
+    elevs: [],
+    voids: [{ x0: 24, y0: 17, x1: 34, y1: 23, t: 'GTX 계단' }, { x0: 52, y0: 17, x1: 62, y1: 23, t: 'GTX 계단' },
+      { x0: 84, y0: 17, x1: 94, y1: 23, t: 'GTX 계단' }, { x0: 112, y0: 17, x1: 122, y1: 23, t: '위례신사 계단' }],
+    solids: [{ x0: 16, y0: 32, x1: 32, y1: 40, t: '기계실' }, { x0: 106, y0: 32, x1: 120, y1: 40, t: '역무·기능실' }, { x0: 136, y0: 0, x1: 140, y1: 14, t: '' }],
+  },
+};
+// 코엑스 B1: 평면도의 파란 몰 영역을 그대로 보행 가능 영역(mask, 1m 칸)으로 사용
+if (window.COEX_B1) {
+  const C = COEX_B1, b = atob(C.mask), m = new Uint8Array(C.W * C.H);
+  for (let i = 0; i < m.length; i++) m[i] = (b.charCodeAt(i >> 3) >> (7 - (i & 7))) & 1;
+  SITES.coex = {
+    name: '3. 코엑스몰 B1 (실제 평면)', W: C.W, H: C.H, grid: 1, sp: 9, cs: 1, n: [1200, 2000], st: 12, fromVoid: 0, zoomZ: 5,
+    note: '코엑스 지하 1층 평면도의 파란 몰 영역을 보행 가능 영역으로 사용 · 평면의 벽·기둥 점은 막힌 칸으로 반영 · 축척은 삼성역~봉은사역 약 600m 기준 추정',
+    exits: C.exits, elevs: [], voids: [], solids: [], img: C.img, mask: m,
+  };
+}
+// 노인·직원 값은 Lim·Lee·Hwang(2023) 표 1·2 (속도 m/s, r = 어깨폭/2). assist = 직원 조력 시 속도
+const KIND = {
+  adult: { v: 1.2, r: .23, c: '#5aa9ff' },
+  elder: { v: .9, r: .19, c: '#ff9f43' },
+  aid: { v: .5, assist: .57, r: .275, c: '#c084fc', help: true },
+  wheel: { v: .83, assist: 1.5, r: .35, c: '#f472b6', help: true },
+  staff: { v: 1.3, r: .18, c: '#4cd07d' },
+};
+// 논문 표 3: 대상 지정(구역별 담당) × 우선순위(휠체어 먼저, 보행보조기 나중)
+const STAFF_SC = {
+  1: { desig: false, prio: false, d: '무작위', p: '무작위' }, 2: { desig: false, prio: true, d: '무작위', p: '우선순위' },
+  3: { desig: true, prio: false, d: '구역 지정', p: '무작위' }, 4: { desig: true, prio: true, d: '구역 지정', p: '우선순위' },
+};
+let staffSc = 1, helpers = [], reinsert = [], queueS = [];
+const staffRes = {};
+const TYPES = { A: '정방형 그리드', B: '엇갈림 그리드', C: '넓은 스팬(1.5배)', D: '출구 앞 기둥', E: '흐름 반응 그리드' };
+let CS = .5;
+const DT = .02;
+const maskOK = (x, y) => !S.mask || (x >= 0 && y >= 0 && x < W && y < H && S.mask[(y | 0) * W + (x | 0)] === 1);
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const rectDist = (v, x, y) => Math.hypot(x - clamp(x, v.x0, v.x1), y - clamp(y, v.y0, v.y1));
+function rng(seed) { return () => { seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+let S, W, H, NX, NY, N, blocked, stairF, elevF, heat, dens;
+let siteId = 'b3f', scen = '2035', type = 'A', cols = [];
+let agents = [], pending = [], t = 0, running = false, outCount = 0, done, queue = [], round = 0, roundBest = null;
+let viewMode = 1, zoom = null;
+const results = {};
+const cellOf = (x, y) => clamp(Math.floor(y / CS), 0, NY - 1) * NX + clamp(Math.floor(x / CS), 0, NX - 1);
+const obstacles = () => [...S.voids, ...S.solids];
+const baseKey = () => siteId + '|' + S.exits.filter(e => e.closed).map(e => e.n).join(',') + '|' + $('nst').value;
+const key = () => baseKey() + '|S' + staffSc;
+
+function loadSite(id) {
+  siteId = id; S = SITES[id]; W = S.W; H = S.H; CS = S.grid || .5; NX = W / CS; NY = H / CS; N = NX * NY;
+  blocked = new Uint8Array(N); heat = new Float32Array(N); dens = new Float32Array(Math.ceil(W) * Math.ceil(H));
+  if (S.img && !S.bg) { S.bg = new Image(); S.bg.src = S.img; }
+  for (const e of [...S.exits, ...S.elevs]) {
+    if (e.side === 'P') continue;
+    e.cx = e.side === 'W' ? 0 : e.side === 'E' ? W : e.p;
+    e.cy = e.side === 'N' ? 0 : e.side === 'S' ? H : e.p;
+  }
+  S.elevs.forEach(e => { e.n = 'EV'; e.rate = 1 / 20; });
+  $('sp').value = S.sp; $('cs').value = S.cs; $('n2026').value = S.n[0]; $('n2035').value = S.n[1]; $('nst').value = S.st;
+  $('siteNote').textContent = S.note; $('tSite').textContent = S.name;
+  for (const b of $('sites').children) b.classList.toggle('on', b.dataset.k === id);
+  agents = []; pending = []; t = 0; running = false; zoom = null; queue = [];
+  showVals(); cols = layout(type); rebuild(); resize(); table();
+}
+
+// ---------- 기둥 배치 유형 ----------
+function layout(tp) {
+  const s = +$('sp').value * (tp === 'C' ? 1.5 : 1), m = S.sp * .5, out = [];
+  const nx = Math.max(1, Math.floor((W - 2 * m) / s) + 1), ny = Math.max(1, Math.floor((H - 2 * m) / s) + 1);
+  const ox = (W - (nx - 1) * s) / 2, oy = (H - (ny - 1) * s) / 2;
+  for (let j = 0; j < ny; j++) for (let i = 0; i <= nx; i++) {
+    const x = ox + i * s + (tp === 'B' && j % 2 ? s / 2 : 0), y = oy + j * s;
+    if (x > W - 1 || (i === nx && !(tp === 'B' && j % 2))) continue;
+    out.push({ x, y });
+  }
+  if (tp === 'D') for (const e of S.exits) {
+    if (e.side === 'P') { out.push({ x: e.cx, y: e.cy + e.w / 2 + 1.7 }); continue; }
+    const d = Math.max(1.7, e.w * .9);
+    out.push({ x: e.side === 'W' ? d : e.side === 'E' ? W - d : e.p, y: e.side === 'N' ? d : e.side === 'S' ? H - d : e.p });
+  }
+  const cr = +$('cs').value / 2;
+  // 벽과 기둥 사이에 사람이 끼지 않게 벽에서 1.5m 이상 띄움 (D의 출구 앞 기둥은 예외)
+  return out.filter((c, i) => [[0, 0], [1.2, 0], [-1.2, 0], [0, 1.2], [0, -1.2]].every(([dx, dy]) => maskOK(c.x + dx, c.y + dy)) && (tp === 'D' && i >= out.length - S.exits.length || (c.x >= 1.5 && c.x <= W - 1.5 && c.y >= 1.5 && c.y <= H - 1.5)) && obstacles().every(v => rectDist(v, c.x, c.y) > cr + 1) &&
+    [...S.exits, ...S.elevs].every(e => tp === 'D' || Math.hypot(c.x - e.cx, c.y - e.cy) > e.w / 2 + 1.2))
+    .map(c => ({ ...c, ox: c.x, oy: c.y }));
+}
+
+function rebuild() {
+  blocked.fill(0);
+  const r = +$('cs').value / 2 + .4, obs = obstacles();
+  for (let k = 0; k < N; k++) {
+    const x = (k % NX + .5) * CS, y = ((k / NX | 0) + .5) * CS;
+    if (!maskOK(x, y) || obs.some(v => rectDist(v, x, y) < .25)) blocked[k] = 1;
+  }
+  colHash = new Map();
+  for (const c of cols) {
+    for (let gy = Math.max(0, Math.floor((c.y - r) / CS)); gy <= Math.min(NY - 1, Math.floor((c.y + r) / CS)); gy++)
+      for (let gx = Math.max(0, Math.floor((c.x - r) / CS)); gx <= Math.min(NX - 1, Math.floor((c.x + r) / CS)); gx++)
+        if (Math.hypot((gx + .5) * CS - c.x, (gy + .5) * CS - c.y) <= r) blocked[gy * NX + gx] = 1;
+    const k = (c.x / 2 | 0) + ',' + (c.y / 2 | 0);
+    if (!colHash.has(k)) colHash.set(k, []); colHash.get(k).push(c);
+  }
+  const open = S.exits.filter(e => !e.closed);
+  stairF = dijkstra(open);
+  elevF = S.elevs.length ? dijkstra(S.elevs) : stairF;
+}
+
+// 출구까지 장애물을 피하는 거리장 (JuPedSim·Pathfinder의 floor field 방식)
+function dijkstra(targets) {
+  const d = new Float64Array(N).fill(1e9), h = [];
+  const push = (dd, k) => { h.push([dd, k]); let i = h.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (h[p][0] <= h[i][0]) break; [h[p], h[i]] = [h[i], h[p]]; i = p; } };
+  const pop = () => { const top = h[0], last = h.pop(); if (h.length) { h[0] = last; let i = 0; for (;;) { const l = 2 * i + 1, r = l + 1; let m = i; if (l < h.length && h[l][0] < h[m][0]) m = l; if (r < h.length && h[r][0] < h[m][0]) m = r; if (m === i) break; [h[m], h[i]] = [h[i], h[m]]; i = m; } } return top; };
+  for (const e of targets) if (e.side === 'P') {
+    for (let k = 0; k < N; k++) if (!blocked[k] && Math.hypot((k % NX + .5) * CS - e.cx, ((k / NX | 0) + .5) * CS - e.cy) < e.w / 2) { d[k] = 0; push(0, k); }
+  } else for (let s = -e.w / 2 + CS / 2; s <= e.w / 2 - CS / 2 + 1e-6; s += CS / 2) {
+    const k = e.side === 'N' || e.side === 'S' ? cellOf(e.cx + s, e.cy) : cellOf(e.cx, e.cy + s);
+    if (d[k]) { d[k] = 0; push(0, k); }
+  }
+  const D = [[1,0,1],[-1,0,1],[0,1,1],[0,-1,1],[1,1,1.414],[1,-1,1.414],[-1,1,1.414],[-1,-1,1.414]];
+  while (h.length) {
+    const [dd, k] = pop(); if (dd > d[k]) continue;
+    const x = k % NX, y = (k / NX) | 0;
+    for (const [dx, dy, w] of D) {
+      const ax = x + dx, ay = y + dy;
+      if (ax < 0 || ay < 0 || ax >= NX || ay >= NY) continue;
+      const nk = ay * NX + ax;
+      if (blocked[nk] || (dx && dy && (blocked[y * NX + ax] || blocked[ay * NX + x]))) continue;
+      if (dd + w < d[nk]) { d[nk] = dd + w; push(dd + w, nk); }
+    }
+  }
+  return d;
+}
+
+// 같은 장소·시나리오는 같은 시드 → 유형끼리 같은 사람들로 비교
+function population() {
+  const R = rng(+scen + siteId.length * 7), n = +$('n' + scen).value, list = [];
+  const pw = +$('w' + scen).value / 100, pb = +$('b' + scen).value / 100, pe = +$('e' + scen).value / 100, ns = +$('nst').value;
+  const xmax = siteId === 'lab' ? W * .7 : W - 1;
+  for (let i = 0; i < n + ns; i++) {
+    const u = R(), kind = i >= n ? 'staff' : u < pw ? 'wheel' : u < pw + pb ? 'aid' : u < pw + pb + pe ? 'elder' : 'adult';
+    let x, y, rel = 0;
+    const fromVoid = S.voids.length && R() < S.fromVoid;
+    if (fromVoid && !KIND[kind].help && kind !== 'staff') { const v = S.voids[Math.floor(R() * S.voids.length)], left = R() < .5; x = left ? v.x0 - .6 : v.x1 + .6; y = v.y0 + .4 + R() * (v.y1 - v.y0 - .8); rel = R() * 45; }
+    else do { x = .6 + R() * (xmax - 1.2); y = .6 + R() * (H - 1.2); } while (obstacles().some(v => rectDist(v, x, y) < .6) || !maskOK(x, y) || !maskOK(x + .5, y) || !maskOK(x - .5, y) || !maskOK(x, y + .5) || !maskOK(x, y - .5) || stairF[cellOf(x, y)] >= 1e9);
+    list.push({ x, y, kind, rel, vx: 0, vy: 0, v0: KIND[kind].v * (.9 + .2 * R()), r: KIND[kind].r });
+  }
+  return list.sort((a, b) => b.rel - a.rel);
+}
+
+function startRun(keepCols) {
+  if (!keepCols) cols = layout(type);
+  rebuild();
+  pending = population(); agents = []; t = 0; outCount = 0; heat.fill(0);
+  // 기둥 안에 놓인 사람은 기둥 밖으로 밀어 둔다 (유형마다 기둥 위치가 달라서)
+  const cr = +$('cs').value / 2;
+  for (const a of pending) for (const c of cols) {
+    const ex = a.x - c.x, ey = a.y - c.y, d = Math.hypot(ex, ey), need = cr + a.r + .05;
+    if (d < need) { const nx = d > 1e-6 ? ex / d : 1, ny = d > 1e-6 ? ey / d : 0; a.x = c.x + nx * need; a.y = c.y + ny * need; }
+  }
+  done = { adult: [], elder: [], aid: [], wheel: [], staff: [] };
+  for (const e of S.elevs) e.next = 0;
+  noise = rng(7); reinsert = [];
+  // 구역 지정: 조력 필요자와 직원을 x 순서로 나눠 직원마다 담당 구역을 준다
+  helpers = pending.filter(a => KIND[a.kind].help).sort((p, q) => p.x - q.x);
+  const staff = pending.filter(a => a.kind === 'staff').sort((p, q) => p.x - q.x);
+  helpers.forEach((h, i) => { h.claimed = false; h.zoneStaff = staff.length ? staff[Math.floor(i * staff.length / helpers.length)] : null; });
+  staff.forEach(s => { s.task = null; });
+  running = true;
+}
+
+let GW, head, nxt = new Int32Array(4000), colHash = new Map();
+// 사회력 모델 (Helbing·Farkas·Vicsek 2000): 목표 속도 이완 + 사회적 반발 + 몸 압축·마찰 접촉력
+const A_SOC = 8, B_SOC = .12, K_BODY = 800, K_FRIC = 800, TAU = .5, NOISE = .6;
+let noise = rng(1);
+function step() {
+  while (pending.length && pending[pending.length - 1].rel <= t) agents.push(pending.pop());
+  GW = Math.ceil(W); const GH = Math.ceil(H);
+  if (!head || head.length !== GW * GH) head = new Int32Array(GW * GH);
+  if (nxt.length < agents.length) nxt = new Int32Array(agents.length * 2);
+  head.fill(-1);
+  agents.forEach((a, i) => { const b = clamp(a.y | 0, 0, GH - 1) * GW + clamp(a.x | 0, 0, GW - 1); nxt[i] = head[b]; head[b] = i; });
+  const cr = +$('cs').value / 2, panic = +$('pn').value, obs = obstacles(), staffOn = +$('nst').value > 0;
+  for (const a of agents) {
+    if (a.kind === 'staff' && !a.task) assign(a);
+    // 기다리던 사람이 군중에 밀려 자리를 옮기면 길을 다시 찾는다
+    else if (a.kind === 'staff' && Math.hypot(a.task.x - a.tx, a.task.y - a.ty) > 1.5) { a.tf = dijkstra([{ side: 'P', cx: a.task.x, cy: a.task.y, w: 2.6 }]); a.tx = a.task.x; a.ty = a.task.y; }
+    // 직원은 담당 노인을 찾아가고, 조력 필요자는 직원이 올 때까지 제자리에서 기다린다 (논문 그림 3)
+    const seeking = a.kind === 'staff' && a.task, waiting = KIND[a.kind].help && !a.escort && staffOn;
+    const f = seeking ? a.tf : stairF;
+    const cx = clamp(Math.floor(a.x / CS), 0, NX - 1), cy = clamp(Math.floor(a.y / CS), 0, NY - 1);
+    let best = f[cy * NX + cx], bx = cx, by = cy;
+    for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+      const ax = cx + dx, ay = cy + dy;
+      if (ax < 0 || ay < 0 || ax >= NX || ay >= NY) continue;
+      const v = f[ay * NX + ax]; if (v < best) { best = v; bx = ax; by = ay; }
+    }
+    let dx = (bx + .5) * CS - a.x, dy = (by + .5) * CS - a.y;
+    // 출구 1.5m 안쪽에서는 문 가운데를 향한다 (문틀에 걸려 멈추지 않게)
+    if (seeking && (best < 2 || best >= 1e9)) { dx = a.task.x - a.x; dy = a.task.y - a.y; }
+    else if (!seeking && best < 3) { const e = nearestTarget(a); dx = e.cx - a.x + (e.side === 'E') - (e.side === 'W'); dy = e.cy - a.y + (e.side === 'S') - (e.side === 'N'); }
+    const L = Math.hypot(dx, dy) || 1, v0 = waiting ? 0 : a.escort ? a.v0 : a.v0 * panic;
+    // 작은 흔들림(Helbing의 fluctuation 항)이 영구 정지를 막는다
+    let fx = (dx / L * v0 - a.vx) / TAU + (noise() - .5) * NOISE, fy = (dy / L * v0 - a.vy) / TAU + (noise() - .5) * NOISE;
+    const gx = a.x | 0, gy = a.y | 0;
+    for (let oy = -1; oy <= 1; oy++) for (let ox = -1; ox <= 1; ox++) {
+      const bx2 = gx + ox, by2 = gy + oy;
+      if (bx2 < 0 || by2 < 0 || bx2 >= GW || by2 >= GH) continue;
+      for (let j = head[by2 * GW + bx2]; j >= 0; j = nxt[j]) {
+        const b = agents[j]; if (b === a) continue;
+        const ex = a.x - b.x, ey = a.y - b.y, d = Math.hypot(ex, ey); if (d < 1e-6 || d > 1.5) continue;
+        const nx = ex / d, ny = ey / d, ov = a.r + b.r - d;
+        let fn = A_SOC * Math.exp(ov / B_SOC);
+        if (ov > 0) {
+          fn += K_BODY * ov;
+          const tx = -ny, ty = nx, dvt = (b.vx - a.vx) * tx + (b.vy - a.vy) * ty;
+          fx += K_FRIC * ov * dvt * tx; fy += K_FRIC * ov * dvt * ty;
+        }
+        fx += fn * nx; fy += fn * ny;
+      }
+    }
+    const wall = (px, py, rr) => {
+      const ex = a.x - px, ey = a.y - py, d = Math.hypot(ex, ey); if (d < 1e-6 || d > 1) return;
+      const ov = rr - d, nx = ex / d, ny = ey / d;
+      let fn = A_SOC * Math.exp(ov / B_SOC);
+      if (ov > 0) { fn += K_BODY * ov; const tx = -ny, ty = nx, vt = a.vx * tx + a.vy * ty; fx -= K_FRIC * ov * vt * tx; fy -= K_FRIC * ov * vt * ty; }
+      fx += fn * nx; fy += fn * ny;
+    };
+    if (S.mask) for (let my = gy - 1; my <= gy + 1; my++) for (let mx = gx - 1; mx <= gx + 1; mx++)
+      if (!maskOK(mx + .5, my + .5)) wall(clamp(a.x, mx, mx + 1), clamp(a.y, my, my + 1), a.r);
+    const hx = a.x / 2 | 0, hy = a.y / 2 | 0, near = [];
+    for (let oy = -1; oy <= 1; oy++) for (let ox = -1; ox <= 1; ox++) { const l = colHash.get((hx + ox) + ',' + (hy + oy)); if (l) near.push(...l); }
+    for (const c of near) if (Math.abs(a.x - c.x) < 2 && Math.abs(a.y - c.y) < 2) {
+      const ex = a.x - c.x, ey = a.y - c.y, d = Math.hypot(ex, ey) || 1e-6, nx = ex / d, ny = ey / d, ov = a.r + cr - d;
+      let fn = A_SOC * Math.exp(ov / B_SOC);
+      if (ov > 0) { fn += K_BODY * ov; const vt = -a.vx * ny + a.vy * nx; fx -= K_FRIC * ov * vt * -ny; fy -= K_FRIC * ov * vt * nx; }
+      fx += fn * nx; fy += fn * ny;
+    }
+    for (const v of obs) if (rectDist(v, a.x, a.y) < 1) wall(clamp(a.x, v.x0, v.x1), clamp(a.y, v.y0, v.y1), a.r);
+    // 바깥 벽: 출구 구간만 열려 있다
+    if (!inDoor(a, 'N')) wall(a.x, 0, a.r); if (!inDoor(a, 'S')) wall(a.x, H, a.r);
+    if (!inDoor(a, 'W')) wall(0, a.y, a.r); if (!inDoor(a, 'E')) wall(W, a.y, a.r);
+    a.ax = fx; a.ay = fy;
+  }
+  for (const a of agents) {
+    a.vx += a.ax * DT; a.vy += a.ay * DT;
+    const sp = Math.hypot(a.vx, a.vy), cap = a.v0 * 2;
+    if (sp > cap) { a.vx *= cap / sp; a.vy *= cap / sp; }
+    a.x += a.vx * DT; a.y += a.vy * DT;
+    if (!inDoor(a, 'W')) a.x = Math.max(a.x, a.r * .5); if (!inDoor(a, 'E')) a.x = Math.min(a.x, W - a.r * .5);
+    if (!inDoor(a, 'N')) a.y = Math.max(a.y, a.r * .5); if (!inDoor(a, 'S')) a.y = Math.min(a.y, H - a.r * .5);
+    if (a.x >= 0 && a.x < W && a.y >= 0 && a.y < H) heat[cellOf(a.x, a.y)] += DT;
+    if (a.kind === 'wheel' && S.elevs.length) {
+      for (const e of S.elevs) if (Math.hypot(a.x - e.cx, a.y - e.cy) < e.w / 2 + .8 && t >= e.next) { e.next = t + 1 / e.rate; leave(a); break; }
+    } else if (!(a.kind === 'staff' && a.task) && (a.x < -.3 || a.x > W + .3 || a.y < -.3 || a.y > H + .3)) leave(a);
+    else if (!(a.kind === 'staff' && a.task) && S.exits.some(e => e.side === 'P' && !e.closed && Math.hypot(a.x - e.cx, a.y - e.cy) < e.w / 2)) leave(a);
+    // 직원이 도착하면 함께 출구로: 직원은 노인 곁에 붙어 이동(조력 속도), 화면에는 초록 테두리로 표시
+    if (a.kind === 'staff' && a.task && Math.hypot(a.x - a.task.x, a.y - a.task.y) < a.r + a.task.r + .6) {
+      const h = a.task; h.escort = a; h.v0 = KIND[h.kind].assist; a.inEscort = true; a.task = null; a.tf = null;
+    }
+  }
+  agents = agents.filter(a => !a.out && !a.inEscort);
+  if (reinsert.length) { agents.push(...reinsert); reinsert = []; }
+  t += DT;
+  if ((!agents.length && !pending.length) || t > 900) finish();
+}
+function leave(a) {
+  a.out = true; done[a.kind].push(t); outCount++;
+  if (a.task) { a.task.claimed = false; a.task = null; }
+  // 대피시킨 직원은 다시 들어와 다음 사람을 찾는다
+  if (a.escort) { const s = a.escort; s.inEscort = false; s.x = clamp(a.x, 1, W - 1); s.y = clamp(a.y, 1, H - 1); s.vx = s.vy = 0; reinsert.push(s); }
+}
+function assign(st) {
+  const sc = STAFF_SC[staffSc];
+  let c = helpers.filter(h => !h.claimed && !h.out);
+  if (sc.desig) { const own = c.filter(h => h.zoneStaff === st); if (own.length) c = own; }
+  if (!c.length) return;
+  if (sc.prio) { const top = c.filter(h => h.kind === 'wheel'); if (top.length) c = top; }
+  const dist = h => Math.hypot(h.x - st.x, h.y - st.y);
+  const h = sc.desig ? c.reduce((b, x) => dist(x) < dist(b) ? x : b) : c[Math.floor(noise() * c.length)];
+  h.claimed = true; st.task = h; st.tx = h.x; st.ty = h.y; st.tf = dijkstra([{ side: 'P', cx: h.x, cy: h.y, w: 2.6 }]);
+}
+function inDoor(a, side) {
+  for (const e of S.exits) if (e.side === side && !e.closed && (a.kind !== 'wheel' || !S.elevs.length)) {
+    if ((side === 'N' || side === 'S') ? Math.abs(a.x - e.cx) < e.w / 2 - .1 : Math.abs(a.y - e.cy) < e.w / 2 - .1) return true;
+  }
+  return false;
+}
+function nearestTarget(a) {
+  const list = a.kind === 'wheel' && S.elevs.length ? S.elevs : S.exits.filter(e => !e.closed);
+  return list.reduce((b, e) => Math.hypot(a.x - e.cx, a.y - e.cy) < Math.hypot(a.x - b.cx, a.y - b.cy) ? e : b, list[0]);
+}
+
+function summary() {
+  const ped = [...done.adult, ...done.elder], help = [...done.aid, ...done.wheel];
+  const mx = a => a.length ? Math.max(...a) : 0, avg = a => a.length ? a.reduce((s, v) => s + v, 0) / a.length : 0;
+  return { ped: mx(ped), elderAvg: avg(done.elder), helpAvg: avg(help), helpMax: mx(help), cut: t > 900 };
+}
+function finish() {
+  running = false;
+  const s = summary(), R = results[key()] = results[key()] || { '2026': {}, '2035': {} };
+  if (type === 'E') {
+    if (!roundBest || s.ped < roundBest.ped) roundBest = { ...s, cols: cols.map(c => ({ ...c })) };
+    if (round < 5) { round++; adapt(); startRun(true); return; }
+    R[scen].E = roundBest; cols = roundBest.cols; round = 0; roundBest = null; rebuild();
+  } else R[scen][type] = s;
+  if (scen === '2035') { const k2 = baseKey() + '|' + type; (staffRes[k2] = staffRes[k2] || {})[staffSc] = R[scen][type]; }
+  table(); next();
+}
+
+// 흐름 반응: 밀도가 높았던 자리에서 기둥이 원래 위치 기준 최대 이동 거리 안에서 비켜선다
+function adapt() {
+  let hmax = 0; for (let k = 0; k < N; k++) if (heat[k] > hmax) hmax = heat[k];
+  if (!hmax) return;
+  const maxOff = +$('mo').value, gap = +$('cs').value + 1.5, obs = obstacles();
+  const around = (x, y) => { let s = 0; const r = 3, cx = Math.floor(x / CS), cy = Math.floor(y / CS);
+    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { const ax = cx + dx, ay = cy + dy; if (ax >= 0 && ay >= 0 && ax < NX && ay < NY && dx * dx + dy * dy <= r * r) s += heat[ay * NX + ax]; }
+    return s / hmax; };
+  const moves = [[0,0],[.5,0],[-.5,0],[0,.5],[0,-.5],[.35,.35],[.35,-.35],[-.35,.35],[-.35,-.35]];
+  for (let it = 0; it < 2; it++) for (const c of cols) {
+    let best = null, bs = Infinity;
+    for (const [dx, dy] of moves) {
+      const x = c.x + dx, y = c.y + dy;
+      if (Math.hypot(x - c.ox, y - c.oy) > maxOff + 1e-6 || x < 1 || x > W - 1 || y < 1 || y > H - 1) continue;
+      if (obs.some(v => rectDist(v, x, y) < 1) || cols.some(o => o !== c && Math.hypot(o.x - x, o.y - y) < gap)) continue;
+      const s = around(x, y);
+      if (s < bs) { bs = s; best = [x, y]; }
+    }
+    if (best) { c.x = best[0]; c.y = best[1]; }
+  }
+}
+function next() {
+  if (queue.length) type = queue.shift(); else if (queueS.length) staffSc = queueS.shift(); else return;
+  syncButtons(); startRun(false);
+}
+
+// ---------- UI ----------
+for (const k in SITES) { const b = document.createElement('button'); b.textContent = SITES[k].name; b.dataset.k = k; b.onclick = () => loadSite(k); $('sites').appendChild(b); }
+for (const k in TYPES) { const b = document.createElement('button'); b.textContent = k + '. ' + TYPES[k]; b.dataset.k = k; b.onclick = () => { if (running) return; type = k; syncButtons(); cols = layout(k); rebuild(); }; $('types').appendChild(b); }
+for (const k in STAFF_SC) { const b = document.createElement('button'); b.textContent = `S${k}. ${STAFF_SC[k].d}·${STAFF_SC[k].p}`; b.dataset.k = k; b.onclick = () => { if (running) return; staffSc = +k; syncButtons(); }; $('staffSc').appendChild(b); }
+$('allS').onclick = () => { queue = []; queueS = [1, 2, 3, 4]; round = 0; roundBest = null; next(); };
+function syncButtons() {
+  for (const b of $('staffSc').children) b.classList.toggle('on', +b.dataset.k === staffSc);
+  for (const b of $('types').children) b.classList.toggle('on', b.dataset.k === type);
+  $('s2026').classList.toggle('on', scen === '2026'); $('s2035').classList.toggle('on', scen === '2035');
+  table();
+}
+for (const s of ['2026', '2035']) $('s' + s).onclick = () => { if (running) return; scen = s; syncButtons(); };
+$('run').onclick = () => { queue = []; round = 0; roundBest = null; startRun(false); };
+$('all').onclick = () => { queue = ['A', 'B', 'C', 'D', 'E']; round = 0; roundBest = null; next(); };
+const VIEW_NAMES = ['밀도 끄기', '실시간 밀도', '누적 히트맵'];
+$('heat').onclick = () => { viewMode = (viewMode + 1) % 3; $('heat').textContent = VIEW_NAMES[viewMode]; $('heat').classList.toggle('on', viewMode > 0); };
+const showVals = () => { for (const [id, u] of [['sp', 'm'], ['cs', 'm'], ['mo', 'm'], ['ts', 'x'], ['pn', '배'], ['nst', '명']]) $(id + 'v').textContent = $(id).value + u; };
+for (const id of ['sp', 'cs', 'mo', 'ts', 'pn', 'nst']) $(id).oninput = showVals;
+$('nst').onchange = () => table();
+$('sp').onchange = $('cs').onchange = () => { if (!running) { cols = layout(type); rebuild(); } };
+// Fruin 보행 서비스 수준 (명/㎡ 상한)
+const LOS = [['A', .31, null], ['B', .43, '#4cd07d'], ['C', .72, '#b5e04c'], ['D', 1.08, '#ffd84d'], ['E', 2, '#ff9f43'], ['F', 99, '#ff4d4d']];
+$('los').innerHTML = '실시간 밀도 (Fruin LOS): ' + LOS.slice(1).map(([g, , c], i) => `<span><i style="background:${c};border-radius:2px"></i>${g} ${LOS[i][1]}~${i === 4 ? '' : LOS[i + 1][1]}명/㎡</span>`).join('');
+$('cv').onclick = e => {
+  const r = $('cv').getBoundingClientRect(), sx = e.clientX - r.left, sy = e.clientY - r.top;
+  const [x, y] = toWorld(sx, sy);
+  const ex = S.exits.find(q => Math.hypot(x - q.cx, y - q.cy) < Math.max(2.5, q.w / 2 + 1.5));
+  if (ex && !running) {
+    if (S.exits.filter(q => !q.closed).length > 1 || ex.closed) { ex.closed = !ex.closed; cols = layout(type); rebuild(); table(); }
+    return;
+  }
+  zoom = zoom ? null : { x: clamp(x, 0, W), y: clamp(y, 0, H), z: S.zoomZ || (siteId === 'lab' ? 1.6 : 2.5) };
+};
+
+function table() {
+  const R = results[key()] || { '2026': {}, '2035': {} };
+  const fmt = (v, base) => { if (!v) return '-'; const s = v.toFixed(0); if (!base || v === base) return s; const p = (v / base - 1) * 100; return `${s} <span class="${p < 0 ? 'better' : 'worse'}">${p > 0 ? '+' : ''}${p.toFixed(0)}%</span>`; };
+  const A6 = R['2026'].A, A5 = R['2035'].A;
+  $('tb').innerHTML = Object.keys(TYPES).map(k => {
+    const r6 = R['2026'][k], r5 = R['2035'][k];
+    return `<tr class="${k === type ? 'cur' : ''}"><td>${k}. ${TYPES[k]}</td><td>${fmt(r6 && r6.ped, A6 && A6.ped)}</td><td>${fmt(r5 && r5.ped, A5 && A5.ped)}</td><td>${fmt(r5 && r5.helpAvg, A5 && A5.helpAvg)}</td><td>${fmt(r5 && r5.helpMax, A5 && A5.helpMax)}</td></tr>`;
+  }).join('');
+  const SR = staffRes[baseKey() + '|' + type] || {}, S1 = SR[1];
+  $('tb2').innerHTML = Object.keys(STAFF_SC).map(k => {
+    const r = SR[k], sc = STAFF_SC[k];
+    return `<tr class="${+k === staffSc ? 'cur' : ''}"><td>S${k}</td><td>${sc.d}</td><td>${sc.p}</td><td>${fmt(r && r.helpAvg, S1 && S1.helpAvg)}</td><td>${fmt(r && r.helpMax, S1 && S1.helpMax)}</td></tr>`;
+  }).join('');
+  const closed = S.exits.filter(e => e.closed).map(e => e.n);
+  $('tSite').textContent = S.name + (closed.length ? ` · 폐쇄 출구 ${closed.join(', ')}` : '');
+}
+function density() {
+  const gw = Math.ceil(W), gh = Math.ceil(H), cnt = new Float32Array(gw * gh);
+  for (const a of agents) if (a.x >= 0 && a.y >= 0 && a.x < W && a.y < H) cnt[(a.y | 0) * gw + (a.x | 0)]++;
+  let mx = 0;
+  for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) {
+    let s = 0, n = 0;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const ax = x + dx, ay = y + dy; if (ax >= 0 && ay >= 0 && ax < gw && ay < gh) { s += cnt[ay * gw + ax]; n++; } }
+    const v = dens[y * gw + x] = (cnt[y * gw + x] + s / n) / 2;
+    if (v > mx) mx = v;
+  }
+  return mx;
+}
+function hud() {
+  $('hScen').textContent = scen; $('hType').textContent = type + '. ' + TYPES[type];
+  $('hT').textContent = t.toFixed(1); $('hOut').textContent = outCount;
+  $('hRound').innerHTML = type === 'E' && running ? `흐름 반응 <b>${round + 1}</b>/6회차` : '';
+  const left = { adult: 0, elder: 0, wait: 0, esc: 0 };
+  for (const a of [...agents, ...pending]) {
+    if (KIND[a.kind].help) left[a.escort ? 'esc' : 'wait']++; else if (left[a.kind] !== undefined) left[a.kind]++;
+  }
+  $('hA').textContent = left.adult; $('hE').textContent = left.elder; $('hW').textContent = left.wait; $('hS').textContent = left.esc;
+  const mx = density(), g = LOS.find(l => mx <= l[1]);
+  $('hD').textContent = mx.toFixed(1); $('hL').textContent = 'LOS ' + g[0]; $('hL').style.color = g[2] || 'var(--mut)';
+}
+
+// ---------- 그리기 ----------
+const cv = $('cv'), ctx = cv.getContext('2d');
+let px = 10, hc, hctx, himg;
+function resize() {
+  const w = cv.parentElement.clientWidth - 24, dpr = devicePixelRatio || 1;
+  px = Math.min(w / (W + 8), 560 / (H + 8)); const ch = (H + 8) * px;
+  cv.width = w * dpr; cv.height = ch * dpr; cv.style.height = ch + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  hc = document.createElement('canvas'); hc.width = NX; hc.height = NY; hctx = hc.getContext('2d'); himg = hctx.createImageData(NX, NY);
+}
+addEventListener('resize', resize);
+function view() {
+  const cw = cv.width / (devicePixelRatio || 1), ch = cv.height / (devicePixelRatio || 1);
+  return zoom ? { s: px * zoom.z, ox: cw / 2 - zoom.x * px * zoom.z, oy: ch / 2 - zoom.y * px * zoom.z } : { s: px, ox: (cw - W * px) / 2, oy: 4 * px };
+}
+const toWorld = (sx, sy) => { const v = view(); return [(sx - v.ox) / v.s, (sy - v.oy) / v.s]; };
+function draw() {
+  const v = view(), s = v.s;
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.save(); ctx.translate(v.ox, v.oy);
+  ctx.fillStyle = '#1e2227'; ctx.fillRect(0, 0, W * s, H * s);
+  if (S.bg && S.bg.complete) { ctx.globalAlpha = .55; ctx.drawImage(S.bg, 0, 0, W * s, H * s); ctx.globalAlpha = 1; }
+  if (viewMode === 1) {
+    const gw = Math.ceil(W);
+    ctx.globalAlpha = .55;
+    for (let k = 0; k < dens.length; k++) { const d = dens[k]; if (d <= LOS[0][1]) continue; ctx.fillStyle = LOS.find(l => d <= l[1])[2]; ctx.fillRect((k % gw) * s, (k / gw | 0) * s, s, s); }
+    ctx.globalAlpha = 1;
+  } else if (viewMode === 2) {
+    let hm = 0; for (let k = 0; k < N; k++) if (heat[k] > hm) hm = heat[k];
+    hm = hm || 1;
+    for (let k = 0; k < N; k++) { const q = Math.sqrt(heat[k] / hm); himg.data[k * 4] = 255; himg.data[k * 4 + 1] = 60 + 195 * q; himg.data[k * 4 + 2] = 40; himg.data[k * 4 + 3] = q * 190; }
+    hctx.putImageData(himg, 0, 0); ctx.imageSmoothingEnabled = true; ctx.drawImage(hc, 0, 0, W * s, H * s);
+  }
+  ctx.strokeStyle = '#8b9097'; ctx.lineWidth = 2; ctx.strokeRect(0, 0, W * s, H * s);
+  ctx.font = `${Math.max(10, Math.min(14, s * 1.1))}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (const o of S.solids) { ctx.fillStyle = '#2f343b'; ctx.fillRect(o.x0 * s, o.y0 * s, (o.x1 - o.x0) * s, (o.y1 - o.y0) * s); ctx.fillStyle = '#8b9097'; if (o.t) ctx.fillText(o.t, (o.x0 + o.x1) / 2 * s, (o.y0 + o.y1) / 2 * s); }
+  for (const o of S.voids) { ctx.fillStyle = '#3a4048'; ctx.fillRect(o.x0 * s, o.y0 * s, (o.x1 - o.x0) * s, (o.y1 - o.y0) * s); ctx.fillStyle = '#c8ccd2'; ctx.fillText(o.t + ' ↑', (o.x0 + o.x1) / 2 * s, (o.y0 + o.y1) / 2 * s); }
+  for (const e of [...S.exits, ...S.elevs]) {
+    const hor = e.side === 'N' || e.side === 'S', isEv = e.n === 'EV', d = 1.2;
+    ctx.fillStyle = e.closed ? '#ff4d4d' : isEv ? '#f472b6' : '#ffd84d';
+    if (e.side === 'P') {
+      ctx.globalAlpha = .7; ctx.beginPath(); ctx.arc(e.cx * s, e.cy * s, e.w / 2 * s, 0, 7); ctx.fill(); ctx.globalAlpha = 1;
+      ctx.fillStyle = e.closed ? '#ff4d4d' : '#fff'; ctx.fillText(e.closed ? '✕ ' + e.n : e.n, e.cx * s, (e.cy - e.w / 2 - 5) * s);
+      continue;
+    }
+    if (hor) ctx.fillRect((e.cx - e.w / 2) * s, (e.cy - (e.side === 'N' ? d : 0)) * s, e.w * s, d * s);
+    else ctx.fillRect((e.cx - (e.side === 'W' ? d : 0)) * s, (e.cy - e.w / 2) * s, d * s, e.w * s);
+    ctx.fillStyle = e.closed ? '#ff4d4d' : '#ece9e3';
+    const lx = e.side === 'W' ? -2.2 : e.side === 'E' ? W + 2.2 : e.cx, ly = e.side === 'N' ? -2 : e.side === 'S' ? H + 2 : e.cy;
+    ctx.fillText(e.closed ? '✕ ' + e.n : e.n, lx * s, ly * s);
+  }
+  const cs = +$('cs').value * s;
+  for (const c of cols) {
+    const moved = Math.hypot(c.x - c.ox, c.y - c.oy) > .05;
+    if (moved) { ctx.strokeStyle = '#4cd07d'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(c.ox * s, c.oy * s); ctx.lineTo(c.x * s, c.y * s); ctx.stroke(); }
+    ctx.fillStyle = '#ece9e3'; ctx.fillRect(c.x * s - cs / 2, c.y * s - cs / 2, cs, cs);
+    if (moved) { ctx.strokeStyle = '#4cd07d'; ctx.lineWidth = 2; ctx.strokeRect(c.x * s - cs / 2, c.y * s - cs / 2, cs, cs); }
+  }
+  for (const a of agents) {
+    const rr = Math.max(a.r * s, 1.5);
+    ctx.fillStyle = KIND[a.kind].c; ctx.beginPath(); ctx.arc(a.x * s, a.y * s, rr, 0, 7); ctx.fill();
+    if (KIND[a.kind].help) { ctx.strokeStyle = a.escort ? '#4cd07d' : '#ffffff'; ctx.lineWidth = Math.max(1, s * .12); ctx.beginPath(); ctx.arc(a.x * s, a.y * s, rr + Math.max(1, s * .12), 0, 7); ctx.stroke(); }
+  }
+  ctx.restore();
+}
+
+loadSite('b3f'); syncButtons();
+(function loop() {
+  const t0 = performance.now(), steps = +$('ts').value * 2.5;
+  if (running) for (let i = 0; i < steps && running && performance.now() - t0 < 40; i++) step();
+  hud(); draw();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

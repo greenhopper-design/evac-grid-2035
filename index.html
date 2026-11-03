@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>조력 구역 그리드 · 2035 서울 피난</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+/* 피난유도등 밤 화면: 짙은 녹흑 바탕 + 유도등 초록 하나만 강조, 위험은 호박색 */
+:root{
+  color-scheme:dark;
+  --bg:#0e1311; --panel:#151c19; --line:#24302b; --fg:#e9efe9; --mut:#8a9a92;
+  --exit:#2fd37a; --warn:#ffb547; --help:#f472b6; --blue:#5aa9ff;
+  --sans:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:16px;line-height:1.7}
+.wrap{max-width:1040px;margin:0 auto;padding-block:40px 64px;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:56px}
+a{color:var(--exit)}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut)}
+h1{font-size:clamp(30px,5vw,52px);line-height:1.15;margin:8px 0 16px;letter-spacing:-.02em;text-wrap:balance}
+h1 em{font-style:normal;color:var(--exit)}
+h2{font-size:24px;margin:0 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0;max-width:68ch}
+.lead{font-size:18px;color:#cdd8d0}
+.cards{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.chip{font-size:14px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--panel)}
+.chip b{font-weight:700}
+.cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px}
+.cta a{display:inline-block;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:700;border:1px solid var(--exit)}
+.cta a.primary{background:var(--exit);color:#06130b}
+.stmt{border-left:3px solid var(--exit);padding:4px 0 4px 18px;font-size:17px}
+.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:760px){.facts{grid-template-columns:1fr}}
+.fact{border-top:1px solid var(--line);padding-top:12px}
+.fact .n{font-family:var(--mono);font-size:30px;color:var(--fg)}
+.fact .n small{font-size:14px;color:var(--mut)}
+.fact p{font-size:14px;color:var(--mut)}
+section{display:flex;flex-direction:column;gap:14px}
+.chart{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.bar{display:grid;grid-template-columns:150px 1fr 70px;gap:10px;align-items:center;font-size:14px}
+.bar .track{height:18px;background:#1b2420;border-radius:3px;overflow:hidden}
+.bar .fill{height:100%;background:var(--mut)}
+.bar .fill.good{background:var(--exit)}
+.bar .fill.bad{background:var(--warn)}
+.bar .v{font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+@media(max-width:760px){.grid2{grid-template-columns:1fr}.bar{grid-template-columns:110px 1fr 60px}}
+.grid2>*{min-width:0}
+.sub{font-size:14px;color:var(--mut)}
+table{border-collapse:collapse;width:100%;font-size:14px;font-variant-numeric:tabular-nums}
+.tablewrap{overflow-x:auto}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--mut);font-weight:500}
+.good{color:var(--exit)} .bad{color:var(--warn)}
+.finding{display:grid;grid-template-columns:44px 1fr;gap:14px;align-items:start}
+.finding .k{font-family:var(--mono);font-size:22px;color:var(--exit)}
+.proposal{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:24px;display:grid;grid-template-columns:1.1fr 1fr;gap:28px}
+@media(max-width:860px){.proposal{grid-template-columns:1fr}}
+.proposal>*{min-width:0}
+.proposal ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:12px}
+.proposal li b{display:block}
+canvas{width:100%;max-width:100%;display:block;border-radius:8px;background:#101714}
+.note{font-size:13px;color:var(--mut);max-width:80ch}
+footer{font-size:13px;color:var(--mut);border-top:1px solid var(--line);padding-top:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">AI도시건축디자인론 중간고사 · 2035 미션 카드 해커톤 · 2026.11.03</div>
+  <h1>2035년 지하 피난의 병목은 기둥이 아니라 <em>도움이 필요한 사람</em>이다</h1>
+  <p class="lead">영동대로 지하공간을 대상으로 기둥 배치 5가지와 직원 조력 방식 4가지를 에이전트 시뮬레이션으로 비교했다. 결과를 바탕으로 기둥 그리드를 직원 담당 구역의 틀로 쓰는 <b>조력 구역 그리드</b>를 제안한다.</p>
+  <div class="cards">
+    <span class="chip">① 무엇을 · <b>기둥 그리드</b></span>
+    <span class="chip">② 무엇에 반응하게 · <b>사람의 흐름</b></span>
+    <span class="chip">③ 어떤 지능으로 · <b>에이전트 시뮬레이션</b></span>
+  </div>
+  <div class="cta"><a class="primary" href="sim.html">시뮬레이터 실행</a><a href="slides.html">발표 슬라이드</a></div>
+</header>
+
+<section>
+  <div class="eyebrow">문제 한 문장</div>
+  <p class="stmt">나는 「기둥 그리드」를 「사람의 흐름」에 반응하게 「에이전트 시뮬레이션」으로 설계한다. 내 시제품은 2035년 노인 이용객이 늘어난 영동대로 지하공간에서, 기둥 배치와 직원 조력 방식에 따라 피난 흐름과 병목이 어떻게 달라지는지 보여 준다.</p>
+</section>
+
+<section>
+  <div class="eyebrow">왜 2035년인가</div>
+  <div class="facts">
+    <div class="fact"><div class="n">29.3 → 47.7 <small>명</small></div><p>노년부양비 2025 → 2035 전망 (통계청 「2025 고령자 통계」)</p></div>
+    <div class="fact"><div class="n">5 <small>개 노선</small></div><p>영동대로 지하 환승센터에 GTX-A·C, 위례신사선, 2·9호선이 모인다. 구조물 공사 2028년까지</p></div>
+    <div class="fact"><div class="n">40 <small>%</small></div><p>서울 지하철역 가운데 비상대피시간 기준을 넘는 역의 비율 (2015 국정감사)</p></div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">방법</div>
+  <h2>전문 피난 도구의 핵심만 브라우저로 옮겼다</h2>
+  <div class="grid2">
+    <div class="sub">
+      <p>· 이동: 사회력 모델(Helbing·Farkas·Vicsek 2000). 몸 압축력과 마찰을 넣어 출구 앞 아치형 정체가 저절로 생긴다.</p>
+      <p>· 길 찾기: 출구까지의 거리장(JuPedSim·Pathfinder 방식).</p>
+      <p>· 사람 유형·직원 행동: Lim·Lee·Hwang(2023, Buildings 13(2):400) 표 1~3. 자가보행 노인 0.9 m/s, 보행보조기 0.5 m/s, 휠체어 0.83 m/s(직원이 밀면 1.5), 직원 1.3 m/s. 보행보조기·휠체어 사용자는 직원을 기다리고, 직원은 데리고 나간 뒤 다시 들어온다.</p>
+      <p>· 화재 시 엘리베이터는 쓰지 않는다.</p>
+    </div>
+    <div class="sub">
+      <p><b style="color:var(--fg)">장소</b></p>
+      <p>· 출구 실험실 20×14m (출구 1.2m)</p>
+      <p>· 2호선 삼성역 대합실 96×28m (서울교통공사 구내도 기반)</p>
+      <p>· 영동대로 B3F 통합대합실 140×40m (서울시 층별 배치도 기반)</p>
+      <p style="margin-top:8px"><b style="color:var(--fg)">비교</b></p>
+      <p>· 기둥: A 정방형, B 엇갈림, C 넓은 스팬, D 출구 앞 기둥, E 흐름 반응(6회 반복)</p>
+      <p>· 직원: S1 무작위, S2 우선순위, S3 구역 지정, S4 구역+우선순위</p>
+      <p>· 2026 구성(노인 12·보조기 1·휠체어 1%) vs 2035 구성(22·3·2%)</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">결과 1 · 기둥 배치</div>
+  <h2>기둥 유형을 바꿔도 피난 시간은 거의 그대로였다</h2>
+  <div class="grid2">
+    <div>
+      <div class="sub">출구 실험실, 2035, 보행자 전원 피난 (초)</div>
+      <div class="chart" id="c1"></div>
+    </div>
+    <div>
+      <div class="sub">삼성역 대합실, 2035, 조력 대상 평균 피난 (초)</div>
+      <div class="chart" id="c2"></div>
+    </div>
+  </div>
+  <p class="note">좁은 출구 하나짜리 방에서는 흐름 반응(E)이 9%, 넓은 스팬(C)과 출구 앞 기둥(D)이 6% 줄였다. 출구가 여럿인 대합실에서는 보행자 피난 시간 차이가 1% 안팎이었다. 출구 3·4·5번을 막은 화재 조건에서도 A 77.6초, D 77.4초로 같았다.</p>
+</section>
+
+<section>
+  <div class="eyebrow">결과 2 · 2035년과 직원 조력</div>
+  <h2>2035년에는 조력 대상의 피난 시간이 2.4배로 늘고, 직원 구역 지정이 그 절반을 되돌린다</h2>
+  <div class="grid2">
+    <div>
+      <div class="sub">조력 대상 평균 피난 (초), 기둥 A, 직원 구역 지정</div>
+      <div class="chart" id="c3"></div>
+    </div>
+    <div>
+      <div class="sub">2035 조력 대상 평균 피난 (초), 직원 행동별</div>
+      <div class="chart" id="c4"></div>
+    </div>
+  </div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>직원 행동 (2035, 기둥 A)</th><th>삼성역 평균</th><th>삼성역 마지막</th><th>B3F 평균</th><th>B3F 마지막</th></tr></thead>
+    <tbody>
+      <tr><td>S1 무작위</td><td>155.9</td><td>330.4</td><td>252.3</td><td>471.4</td></tr>
+      <tr><td>S2 우선순위(휠체어 먼저)</td><td>158.6 <span class="bad">+2%</span></td><td>348.1</td><td>268.0 <span class="bad">+6%</span></td><td>592.9</td></tr>
+      <tr><td>S3 구역 지정</td><td>92.2 <span class="good">−41%</span></td><td>230.5 <span class="good">−30%</span></td><td>113.8 <span class="good">−55%</span></td><td>253.0 <span class="good">−46%</span></td></tr>
+      <tr><td>S4 구역 지정+우선순위</td><td>86.2 <span class="good">−45%</span></td><td>233.8</td><td>111.0 <span class="good">−56%</span></td><td>291.6</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">직원 수는 삼성역 6명, B3F 10명. 구역 지정이 가장 중요하고 우선순위만으로는 효과가 없다는 점은 Lim 외(2023)의 결론과 같다. 공간이 클수록 효과가 커졌다(41% → 55%). 무작위로 고르면 직원이 넓은 대합실을 가로질러 오가기 때문이다.</p>
+</section>
+
+<section>
+  <div class="eyebrow">발견</div>
+  <div class="finding"><div class="k">1</div><p>대형 지하공간에서 기둥 배치는 걷는 사람의 피난 시간을 거의 바꾸지 못한다. 병목은 출구와 계단 폭이 만든다.</p></div>
+  <div class="finding"><div class="k">2</div><p>2035년의 진짜 병목은 혼자 나갈 수 없는 사람이다. 같은 공간에서 조력 대상의 평균 피난 시간이 2.4배가 된다.</p></div>
+  <div class="finding"><div class="k">3</div><p>그 시간을 줄이는 가장 큰 변수는 직원이 누구를 맡느냐다. 구역을 나눠 맡기면 41~56% 줄고, 넓을수록 효과가 크다.</p></div>
+  <div class="finding"><div class="k">4</div><p>출구 앞 기둥은 좁고 붐비는 출구에서만 도움이 된다(−6%). 넓은 출구 앞에서는 효과가 없거나 방해가 된다.</p></div>
+</section>
+
+<section>
+  <div class="eyebrow">설계 제안</div>
+  <h2>조력 구역 그리드: 기둥 그리드를 직원 담당 구역의 틀로 쓴다</h2>
+  <div class="proposal">
+    <ol>
+      <li><b>기둥 3×2칸을 직원 1명의 담당 구역으로 묶는다</b>기둥에 구역 번호와 색을 넣고 바닥에 구역 경계 띠를 깐다. 직원은 화재 때 자기 구역만 맡는다(S3). 시뮬레이션에서 조력 대상 평균 피난 시간을 41~56% 줄인 조건이다.</li>
+      <li><b>구역마다 출구 가까운 칸 하나를 조력 대기 포켓으로 비운다</b>휠체어·보행보조기 사용자가 기다릴 자리를 정해 직원이 찾는 시간을 없앤다. Lim 외(2023)는 휠체어 사용자를 출구 가까이 두라고 권한다. 이 항목은 아직 시뮬레이션으로 검증하지 않았다.</li>
+      <li><b>출구 앞 흐름 분리 기둥은 폭 1.5m 이하 좁은 출구에만 둔다</b>문에서 1.7m 앞. 좁은 출구 실험에서만 6% 효과가 있었고, 3m 이상 출구에서는 효과가 없었다.</li>
+      <li><b>구역 경계는 승강장 계단과 출구 위치에 맞춰 긋는다</b>각 구역이 출구 하나 이상과 계단 하나를 갖도록 기둥 열을 정렬한다.</li>
+    </ol>
+    <div>
+      <canvas id="dia" width="560" height="300" aria-label="조력 구역 그리드 개념도"></canvas>
+      <p class="note" style="margin-top:8px">개념도: 기둥(흰 점) 그리드를 구역(색 칸)으로 나누고, 출구(초록) 옆 칸을 조력 대기 포켓(분홍)으로 둔다.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">한계와 다음 단계</div>
+  <p class="sub">· 평면은 구내도와 층별 배치도를 비율로 따라 그린 개략 평면이고, 치수는 추정이다. 벽·기둥이 그려진 실측 도면(예: ArchDaily의 서울시 신청사 평면)으로 다시 검증한다.</p>
+  <p class="sub">· 수치는 가정값으로 돌린 유형 비교용이며 RSET 산정값이 아니다. 같은 평면을 Pathfinder로 돌려 교차 검증한다.</p>
+  <p class="sub">· 조력 대기 포켓(제안 2)은 시뮬레이션에 넣어 효과를 확인한다.</p>
+  <p class="sub">· 이용자 비율과 직원 수는 가정값이다. 실제 이용 통계로 바꾼다.</p>
+</section>
+
+<footer>
+  참고: Helbing, Farkas, Vicsek (2000) Nature 407 · Lim, Lee, Hwang (2023) Buildings 13(2):400 · 서울교통공사 삼성역 구내도(내 손안에 서울, 2025.05) · 서울균형발전포털 영동대로 층별 배치계획 · 통계청 「2025 고령자 통계」 · Fruin 보행 서비스 수준.<br>
+  AI 활용: Claude와 함께 제작. 장소·카드 해석·직원 시나리오 채택·설계 제안 선택은 작성자가 정함.
+</footer>
+</div>
+<script>
+const bars = (id, rows, max, goodFn) => {
+  document.getElementById(id).innerHTML = rows.map(([k, v, cls]) =>
+    `<div class="bar"><span>${k}</span><div class="track"><div class="fill ${cls || ''}" style="width:${(v / max * 100).toFixed(1)}%"></div></div><span class="v">${v.toFixed(1)}</span></div>`).join('');
+};
+bars('c1', [['A 정방형', 38.9], ['B 엇갈림', 38.4], ['C 넓은 스팬', 36.4, 'good'], ['D 출구 앞 기둥', 36.6, 'good'], ['E 흐름 반응', 35.3, 'good']], 45);
+bars('c2', [['A 정방형', 92.2], ['B 엇갈림', 93.5], ['C 넓은 스팬', 89.0], ['D 출구 앞 기둥', 85.5, 'good'], ['E 흐름 반응', 89.8]], 110);
+bars('c3', [['삼성역 2026', 38.4], ['삼성역 2035', 92.2, 'bad'], ['B3F 2026', 47.1], ['B3F 2035', 113.8, 'bad']], 130);
+bars('c4', [['삼성역 S1 무작위', 155.9, 'bad'], ['삼성역 S3 구역 지정', 92.2, 'good'], ['B3F S1 무작위', 252.3, 'bad'], ['B3F S3 구역 지정', 113.8, 'good']], 270);
+
+// 조력 구역 그리드 개념도
+const cv = document.getElementById('dia'), c = cv.getContext('2d');
+const W = 560, H = 300, s = 8, cols = 9, rows = 4, ox = 40, oy = 40, bay = 60;
+const zc = ['#2b4a3a', '#2a3e52', '#4a3d2a', '#3f2c48'];
+c.fillStyle = '#101714'; c.fillRect(0, 0, W, H);
+for (let j = 0; j < rows - 1; j++) for (let i = 0; i < cols - 1; i++) {
+  const z = Math.floor(i / 2) % 4;
+  c.fillStyle = zc[z]; c.fillRect(ox + i * bay + 1, oy + j * bay + 1, bay - 2, bay - 2);
+}
+c.strokeStyle = '#8a9a92'; c.lineWidth = 2; c.strokeRect(ox - 10, oy - 10, (cols - 1) * bay + 20, (rows - 1) * bay + 20);
+[[1, 0], [3, 2], [5, 0], [7, 2]].forEach(([i, j], k) => {
+  c.fillStyle = 'rgba(244,114,182,.55)'; c.fillRect(ox + i * bay + 1, oy + j * bay + 1, bay - 2, bay - 2);
+  const ex = ox + i * bay + bay / 2, ey = j === 0 ? oy - 10 : oy + (rows - 1) * bay + 10;
+  c.fillStyle = '#2fd37a'; c.fillRect(ex - 18, ey - 5, 36, 10);
+});
+c.fillStyle = '#e9efe9';
+for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) c.fillRect(ox + i * bay - 4, oy + j * bay - 4, s, s);
+c.font = '13px "IBM Plex Sans KR", sans-serif'; c.fillStyle = '#e9efe9';
+['구역 1', '구역 2', '구역 3', '구역 4'].forEach((t, k) => c.fillText(t, ox + k * 2 * bay + 34, oy + (rows - 1) * bay + 40));
+c.fillStyle = '#8a9a92'; c.fillText('출구', ox + bay * 1.5 - 12, oy - 18);
+</script>
+</body>
+</html>
